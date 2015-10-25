@@ -62,5 +62,10 @@ public:
 			a[i].prev = i;
 		}
 	}
+	~MyLinkList() {
+		if (a != NULL) {
+			delete a;
+		}
+	}
 };
 #endif

@@ -127,8 +127,12 @@ public:
 		tm->setBit(typeID, 1);
 	}
 	void shutdown() {
-		delete tm;
-		delete fm;
+		if (tm != NULL) {
+			delete tm;
+		}
+		if (fm != NULL) {
+			delete fm;
+		}
 	}
 	~FileManager() {
 		this->shutdown();

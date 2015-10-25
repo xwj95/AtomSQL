@@ -172,5 +172,19 @@ public:
 			addr[i] = NULL;
 		}
 	}
+	~BufPageManager() {
+		if (dirty != NULL) {
+			delete dirty;
+		}
+		if (addr != NULL) {
+			delete addr;
+		}
+		if (hash != NULL) {
+			delete hash;
+		}
+		if (replace != NULL) {
+			delete replace;
+		}
+	}
 };
 #endif

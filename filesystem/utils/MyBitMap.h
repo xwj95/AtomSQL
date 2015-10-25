@@ -227,5 +227,10 @@ public:
 	void reLoad(uint* da) {
 		data = da;
 	}
+	~MyBitMap() {
+		if (data != NULL) {
+			delete data;
+		}
+	}
 };
 #endif

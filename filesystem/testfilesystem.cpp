@@ -31,5 +31,7 @@ int main() {
 		cout << b[0] << endl; 		//读取缓存页中第一个整数
 		bpm->access(index); //标记访问
 	}
+	delete bpm;
+	delete fm;
 	return 0;
 }
