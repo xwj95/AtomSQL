@@ -10,7 +10,6 @@
  * 一个页面中的字节数
  */
 #define PAGE_SIZE 8192
-#define PAGE_HEADER_SIZE 0
 /*
  * 一个页面中的整数个数
  */
@@ -49,8 +48,8 @@ typedef unsigned int uint;
 typedef unsigned short ushort;
 typedef unsigned char uchar;
 typedef unsigned long long ull;
-//typedef long long ll;
-//typedef double db;
+typedef long long ll;
+typedef double db;
 typedef int INT;
 typedef int(cf)(uchar*, uchar*);
 int current = 0;

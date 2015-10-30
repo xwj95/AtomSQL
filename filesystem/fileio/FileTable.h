@@ -92,15 +92,6 @@ public:
 	}
 	~FileTable() {
 		save();
-		if (ft != NULL) {
-			delete ft;
-		}
-		if (ff != NULL) {
-			delete ff;
-		}
-		if (idToName != NULL) {
-			delete idToName;
-		}
 	}
 };
 #endif

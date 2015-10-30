@@ -51,10 +51,5 @@ public:
 			list->insert(0, i);
 		}
 	}
-	~FindReplace() {
-		if (list != NULL) {
-			delete list;
-		}
-	}
 };
 #endif
