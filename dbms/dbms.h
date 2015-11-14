@@ -8,8 +8,8 @@
 #ifndef DBMS_DBMS_H_
 #define DBMS_DBMS_H_
 
-#include "../filesystem/filesystem.h"
 #include "../type/integer.h"
+#include "io.h"
 #include "data.h"
 #include "column.h"
 #include "dbmsdef.h"
@@ -20,76 +20,12 @@
 class Dbms {
 	FileManager* fm;
 	BufPageManager* bpm;
+	IO io;
 	map<std::string, int> files;
 	map<std::string, Column> headers;
 	std::string directory;
 	const std::string separator = "/";
 	const std::string dbtype = ".db";
-	BufType writeInt(BufType b, int integer) {
-		memcpy(b, &integer, sizeof(int));
-		return (uint*) b + 1;
-	}
-	BufType readInt(BufType b, int &integer) {
-		integer = b[0];
-		return (uint*) b + 1;
-	}
-	BufType writeLong(BufType b, long long longinteger) {
-		ull longint = longinteger;
-		ull mod = 1;
-		mod = (mod << 32) - 1;
-		uint low = longint & mod;
-		uint high = longint >> 32;
-		b = writeInt(b, (int) high);
-		b = writeInt(b, (int) low);
-		return b;
-	}
-	BufType readLong(BufType b, long long &longint) {
-		int high, low;
-		b = readInt(b, high);
-		b = readInt(b, low);
-		longint = ((ull) high << 32) + (ull) low;
-		return b;
-	}
-	BufType writeChar(BufType b, std::string str, int length = 0) {
-		if (length == 0) {
-			length = str.length();
-		}
-		uint x = 0;
-		for (int i = 0; i < (length + 3) / 4 * 4; ++i) {
-			x = x << 8;
-			if (i < length) {
-				if (i < str.length()) {
-					x = x + (uint) str[i];
-				}
-			}
-			if ((i & 3) == 3) {
-				memcpy(b, &x, sizeof(uint));
-				b = (uint*) b + 1;
-				x = 0;
-			}
-		}
-		return b;
-	}
-	BufType readChar(BufType b, std::string &str, int length) {
-		int i = 0;
-		str = std::string(length, '\0');
-		while (true) {
-			uint x = b[0];
-			for (int d = 3; d >= 0; --d) {
-				str[i + d] = x & ((1 << 8) - 1);
-				if ((str[i + d] == 0) && (length > i + d)) {
-					length = i + d;
-				}
-				x = x >> 8;
-			}
-			b = (uint*) b + 1;
-			i = i + 4;
-			if (i >= length) {
-				str = str.substr(0, length);
-				return b;
-			}
-		}
-	}
 	int writeData(int fileID, Column column, std::vector<Data> data) {
 		Column header = readHeader(fileID, 0);
 		int pageID = 1;
@@ -106,16 +42,16 @@ class Dbms {
 				int header_index;
 				BufType header_b = bpm->getPage(fileID, 0, header_index);
 				header_b = header_b + TABLE_HEADER_SCHEMA_BITS / 4 + TABLE_HEADER_MAJOR_SIZE;
-				header_b = writeInt(header_b, header.pages);
+				header_b = io.writeInt(header_b, header.pages);
 				bpm->markDirty(header_index);
 				b = bpm->allocPage(fileID, pageID, index, true);
 				BufType _b;
 				for (int i = 0; i < PAGE_SIZE / column.size; ++i) {
 					if (i < PAGE_SIZE / column.size - 1) {
-						_b = writeInt(_b, 1);
+						_b = io.writeInt(_b, 1);
 					}
 					else {
-						_b = writeInt(_b, 0);
+						_b = io.writeInt(_b, 0);
 					}
 					_b = _b + (column.size - (TABLE_ITEM_NULL_BITS + TABLE_ITEM_NEXT_BITS) / 8) / sizeof(uint);
 				}
@@ -131,17 +67,17 @@ class Dbms {
 		int index;
 		BufType b = bpm->allocPage(fileID, pageID, index, true);
 //		BufType c = b;
-		b = writeChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
-		b = writeInt(b, column.major);
-		b = writeInt(b, column.pages);
+		b = io.writeChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
+		b = io.writeInt(b, column.major);
+		b = io.writeInt(b, column.pages);
 		for (int i = 0; i < column.type.size(); ++i) {
 			uint x = column.type[i];
 			x = x << TABLE_HEADER_LENGTH_BITS;
 			x = x + (column.length[i] & ((1 << TABLE_HEADER_LENGTH_BITS) - 1));
 			x = x << TABLE_HEADER_NULL_BITS;
 			x = x + column.canNull[i];
-			b = writeInt(b, x);
-			b = writeChar(b, column.name[i], TABLE_HEADER_NAME_BITS);
+			b = io.writeInt(b, x);
+			b = io.writeChar(b, column.name[i], TABLE_HEADER_NAME_BITS);
 		}
 //		for (int i = 0; i < 2048; ++i) {
 //			cout << c[i] << ' ';
@@ -158,16 +94,16 @@ class Dbms {
 //		}
 //		cout << " read end" << endl;
 		Column column;
-		b = readChar(b, column.schema, TABLE_HEADER_NAME_BITS);
+		b = io.readChar(b, column.schema, TABLE_HEADER_NAME_BITS);
 		int major;
-		b = readInt(b, major);
+		b = io.readInt(b, major);
 		column.major = (uint) major;
 		int pages;
-		b = readInt(b, pages);
+		b = io.readInt(b, pages);
 		column.pages = (uint) pages;
 		while (true) {
 			int _x;
-			b = readInt(b, _x);
+			b = io.readInt(b, _x);
 			uint x = (uint) _x;
 			if (x == 0) {
 				break;
@@ -178,7 +114,7 @@ class Dbms {
 			x = x >> TABLE_HEADER_LENGTH_BITS;
 			column.type.push_back(x & (1 << TABLE_HEADER_TYPES_BITS) - 1);
 			std::string name;
-			b = readChar(b, name, TABLE_HEADER_NAME_BITS);
+			b = io.readChar(b, name, TABLE_HEADER_NAME_BITS);
 			column.name.push_back(name);
 		}
 		return column;
@@ -332,6 +268,7 @@ public:
 		bpm = NULL;
 		files.clear();
 		headers.clear();
+		io = IO();
 		directory = "";
 	}
 	~Dbms() {
@@ -395,7 +332,7 @@ public:
 		return 0;
 	}
 	int dropTable(std::string tableName) {
-		if (!openTable(tableName)) {
+		if (openTable(tableName)) {
 			return -1;
 		}
 		fm->closeFile(files[tableName]);
