@@ -23,18 +23,21 @@ public:
 	uint major;
 	uint pages;
 	uint size;
+	uint count;
 	Column() {
 		schema = "";
 		major = 0;
 		pages = 0;
 		size = 0;
+		count = 0;
 		type.clear();
 		length.clear();
 		canNull.clear();
 		name.clear();
 	}
 	uint countSize() {
-		size = (TABLE_ITEM_NULL_BITS + TABLE_ITEM_NEXT_BITS) / 8 + TABLE_ITEM_RID_SIZE;
+		size = TABLE_ITEM_NEXT_SIZE + TABLE_ITEM_RID_SIZE;
+		size = size + (type.size() * TABLE_ITEM_NULL_BITS + 31) / 32 * 4;
 		for (int i = 0; i < type.size(); ++i) {
 			switch (type[i]) {
 			case Type::Char:
@@ -52,6 +55,7 @@ public:
 				break;
 			}
 		}
+		count = (PAGE_SIZE - TABLE_ITEM_NEXT_SIZE) / size;
 		return size;
 	}
 };

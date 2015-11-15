@@ -20,21 +20,27 @@ public:
 		integer = b[0];
 		return (uint*) b + 1;
 	}
-	BufType writeLong(BufType b, long long longinteger) {
-		ull longint = longinteger;
-		ull mod = 1;
-		mod = (mod << 32) - 1;
-		uint low = longint & mod;
+	BufType writeUint(BufType b, uint integer) {
+		memcpy(b, &integer, sizeof(uint));
+		return (uint*) b + 1;
+	}
+	BufType readUint(BufType b, uint &integer) {
+		integer = b[0];
+		return (uint*) b + 1;
+	}
+	BufType writeLong(BufType b, ll longinteger) {
+		ull longint = (ull) longinteger;
+		uint low = longint & (((ull) 1 << 32) - 1);
 		uint high = longint >> 32;
-		b = writeInt(b, (int) high);
-		b = writeInt(b, (int) low);
+		b = writeUint(b, high);
+		b = writeUint(b, low);
 		return b;
 	}
-	BufType readLong(BufType b, long long &longint) {
-		int high, low;
-		b = readInt(b, high);
-		b = readInt(b, low);
-		longint = ((ull) high << 32) + (ull) low;
+	BufType readLong(BufType b, ll &longinteger) {
+		uint high, low;
+		b = readUint(b, high);
+		b = readUint(b, low);
+		longinteger = (ll) (((ull) high << 32) + low);
 		return b;
 	}
 	BufType writeChar(BufType b, std::string str, int length = 0) {
@@ -76,6 +82,15 @@ public:
 				return b;
 			}
 		}
+	}
+	void print(BufType b) {
+		for (int i = 0; i < 2048; ++i) {
+			cout << b[i] << ' ';
+			if ((i + 1) % 60 == 0) {
+				cout << endl;
+			}
+		}
+		cout << endl;
 	}
 };
 

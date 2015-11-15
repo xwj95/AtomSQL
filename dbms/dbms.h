@@ -8,7 +8,6 @@
 #ifndef DBMS_DBMS_H_
 #define DBMS_DBMS_H_
 
-#include "../type/integer.h"
 #include "tableManager.h"
 #include <algorithm>
 #include <string>
@@ -59,7 +58,7 @@ class Dbms {
 			string file = std::string(direntp->d_name);
 			if ((file != ".") && (file != "..")) {
 				file = directory + separator + file;
-				int result = remove(file.c_str());
+				remove(file.c_str());
 			}
 		}
 		closedir(dirp);
@@ -129,6 +128,12 @@ public:
 	}
 	void clear() {
 		if (bpm != NULL) {
+			//将当前缓存中的内容全部写回文件
+			map<std::string, int>::iterator iter = files.begin();
+			while (iter != files.end()) {
+				bpm->writeBack(iter->second);
+				iter++;
+			}
 			delete bpm;
 			bpm = NULL;
 		}
@@ -146,10 +151,10 @@ public:
 	int dropDatabase(std::string dbName) {
 		//如果待删除的数据库是当前数据库，则清除文件和表的信息
 		if (directory == dbName + separator) {
+			clear();
 			directory = "";
 			files.clear();
 			headers.clear();
-			clear();
 		}
 		//待删除数据库不存在
 		if (removeDirectory(dbName)) {
@@ -169,18 +174,18 @@ public:
 				cout << dbName << " does not exist." << endl;
 				return -1;
 			}
+			clear();
 			//切换目录，并获取所有表及信息
 			directory = _directory;
 			files.clear();
 			headers.clear();
-			clear();
 			fm = new FileManager();
 			bpm = new BufPageManager(fm);
 		}
 		return 0;
 	}
 	//创建表
-	int createTable(std::string tableName, Column column) {
+	int createTable(std::string tableName, Column &column) {
 		//待创建表已存在，或没有指定数据库
 		if (openTable(tableName, false)) {
 			return -1;
@@ -221,7 +226,7 @@ public:
 		std::string file = directory + tableName + dbtype;
 		//删除表
 		int result = remove(file.c_str());
-		return 0;
+		return result;
 	}
 	//列出当前数据库所有表
 	int showTables() {
@@ -247,42 +252,42 @@ public:
 		return 0;
 	}
 	//插入记录
-	int insertData(std::string tableName, std::vector<Data> data, Column column) {
+	int insertData(std::string tableName, std::vector<Data> &data, Column column) {
 		//表不存在，或没有指定数据库
 		if (openTable(tableName)) {
 			return -1;
 		}
 		//获取表的信息
-		Column _column = headers[tableName];
+		Column header = headers[tableName];
 		std::vector<int> indexs;
 		//获取待插入的列项的列数，并检查是否有非法情况
-		if (tb->getIndexs(column, _column, indexs, true)) {
+		if (tb->getIndexs(column, header, indexs, true)) {
 			return -1;
 		}
-		std::vector<Data> _data;
+		std::vector<Data> write_data;
 		//将记录转化为文件中存储格式，并检查是否有非法情况
-		if (tb->getWriteData(column, _column, indexs, data, _data)) {
+		if (tb->getWriteData(column, header, indexs, data, write_data)) {
 			return -1;
 		}
 		//将记录插入表中
 		std::string file = directory + tableName + dbtype;
 		int fileID;
 		fm->openFile(file.c_str(), fileID);
-		if (tb->writeData(bpm, fileID, _column, _data)) {
+		if (tb->writeData(bpm, fileID, header, write_data)) {
 			return -1;
 		}
 		return 0;
 	}
 	//删除记录
-	int deleteData(std::string tableName, Data data) {
+	int deleteData(std::string tableName, std::vector<Data> &data) {
 		return 0;
 	}
 	//更新记录
-	int updateData(std::string tableName, Data data) {
+	int updateData(std::string tableName, std::vector<Data> &data) {
 		return 0;
 	}
 	//查找记录
-	int selectData(std::string tableName, Data data, Data &result) {
+	int selectData(std::string tableName, std::vector<Data> &data, std::vector<Data> &result) {
 		return 0;
 	}
 };
