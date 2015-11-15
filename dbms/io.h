@@ -43,6 +43,20 @@ public:
 		longinteger = (ll) (((ull) high << 32) + low);
 		return b;
 	}
+	BufType writeUlong(BufType b, ull ulonginteger) {
+		uint low = ulonginteger & (((ull) 1 << 32) - 1);
+		uint high = ulonginteger >> 32;
+		b = writeUint(b, high);
+		b = writeUint(b, low);
+		return b;
+	}
+	BufType readUlong(BufType b, ull &ulonginteger) {
+		uint high, low;
+		b = readUint(b, high);
+		b = readUint(b, low);
+		ulonginteger = (((ull) high << 32) + low);
+		return b;
+	}
 	BufType writeChar(BufType b, std::string str, int length = 0) {
 		if (length == 0) {
 			length = str.length();
@@ -65,20 +79,21 @@ public:
 	}
 	BufType readChar(BufType b, std::string &str, int length) {
 		int i = 0;
+		int len = length;
 		str = std::string(length, '\0');
 		while (true) {
 			uint x = b[0];
 			for (int d = 3; d >= 0; --d) {
 				str[i + d] = x & ((1 << 8) - 1);
-				if ((str[i + d] == 0) && (length > i + d)) {
-					length = i + d;
+				if ((str[i + d] == 0) && (len > i + d)) {
+					len = i + d;
 				}
 				x = x >> 8;
 			}
 			b = (uint*) b + 1;
 			i = i + 4;
 			if (i >= length) {
-				str = str.substr(0, length);
+				str = str.substr(0, len);
 				return b;
 			}
 		}

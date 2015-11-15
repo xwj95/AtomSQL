@@ -55,7 +55,7 @@ public:
 				break;
 			}
 		}
-		count = (PAGE_SIZE - TABLE_ITEM_NEXT_SIZE) / size;
+		count = (PAGE_SIZE - TABLE_ITEM_NEXT_SIZE - TABLE_ITEM_EMPTY_SIZE) / size;
 		return size;
 	}
 };

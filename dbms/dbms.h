@@ -129,11 +129,7 @@ public:
 	void clear() {
 		if (bpm != NULL) {
 			//将当前缓存中的内容全部写回文件
-			map<std::string, int>::iterator iter = files.begin();
-			while (iter != files.end()) {
-				bpm->writeBack(iter->second);
-				iter++;
-			}
+			bpm->close();
 			delete bpm;
 			bpm = NULL;
 		}
@@ -273,21 +269,43 @@ public:
 		std::string file = directory + tableName + dbtype;
 		int fileID;
 		fm->openFile(file.c_str(), fileID);
-		if (tb->writeData(bpm, fileID, header, write_data)) {
-			return -1;
-		}
-		return 0;
+		int result = tb->writeData(bpm, fileID, header, write_data);
+		headers[tableName] = header;
+		return result;
 	}
 	//删除记录
-	int deleteData(std::string tableName, std::vector<Data> &data) {
-		return 0;
+	int deleteData(std::string tableName, Data &where_data) {
+		//表不存在，或没有指定数据库
+		if (openTable(tableName)) {
+			return -1;
+		}
+		//获取表的信息
+		Column header = headers[tableName];
+		std::string file = directory + tableName + dbtype;
+		int fileID;
+		fm->openFile(file.c_str(), fileID);
+		int result = tb->deleteData(bpm, fileID, header, where_data);
+		headers[tableName] = header;
+		return result;
 	}
 	//更新记录
 	int updateData(std::string tableName, std::vector<Data> &data) {
+		//表不存在，或没有指定数据库
+		if (openTable(tableName)) {
+			return -1;
+		}
+		//获取表的信息
+		Column header = headers[tableName];
 		return 0;
 	}
 	//查找记录
 	int selectData(std::string tableName, std::vector<Data> &data, std::vector<Data> &result) {
+		//表不存在，或没有指定数据库
+		if (openTable(tableName)) {
+			return -1;
+		}
+		//获取表的信息
+		Column header = headers[tableName];
 		return 0;
 	}
 };

@@ -34,45 +34,47 @@ public:
 					//修改存储表的信息的页面
 					int header_index;
 					BufType header_b = bpm->getPage(fileID, 0, header_index);
-					header_b = header_b + TABLE_HEADER_SCHEMA_BITS / 4 + TABLE_HEADER_MAJOR_SIZE;
+					header_b = header_b + ((TABLE_HEADER_SCHEMA_BITS + 3) / 4 * 4 + TABLE_HEADER_MAJOR_SIZE) / sizeof(uint);
 					header_b = io->writeUint(header_b, header.pages);
 					bpm->markDirty(header_index);
 					//申请新的页面
 					b = bpm->allocPage(fileID, pageID, index, true);
-					//以下更新每个槽的next指针
 					BufType next_b = b;
+					//初始化空槽数
+					next_b = io->writeUint(next_b, header.count);
+					//初始化每个槽的next指针
 					for (int i = 0; i < header.count; ++i) {
-						if (i < header.count - 1) {
-							//next指针指向下一个槽
-							next_b = io->writeUint(next_b, 1);
-						}
-						else {
-							//当前槽为最后一个槽
-							next_b = io->writeUint(next_b, 0);
-						}
+						//next指针指向下一个槽
+						next_b = io->writeUint(next_b, 1);
 						next_b = next_b + (header.size - TABLE_ITEM_NEXT_SIZE) / sizeof(uint);
 					}
+					//最后一个next指针指向空
+					next_b = io->writeUint(next_b, 0);
 					bpm->markDirty(index);
 				}
 				if (pageID <= header.pages) {
 					b = bpm->getPage(fileID, pageID, index);
 					BufType next_b = b;
+					//读取空槽数
+					uint _empty;
+					b = io->readUint(b, _empty);
 					//查找第一个空槽
 					uint next = b[0];
 					if (next > 0) {
 						//当前页面未满，将当前记录写入空槽
 						b = b + (next - 1) * header.size / sizeof(uint);
 						Data _data = data[i];
-						//查找下一个空槽，并将next指针指向下一个空槽
+						//查找下一个空槽
 						uint _next;
 						io->readUint(b + header.size, _next);
-						b = io->writeUint(b, _next + 1);
+						//next指针暂时指向自己
+						b = io->writeUint(b, 1);
 						//写入rid值
-						b = io->writeUint(b, _data.rid);
+						b = io->writeUlong(b, _data.rid);
 						//写入每一列项是否为空
 						uint _isnull = 0;
 						for (int j = 0; j < _data.isNull.size(); ++j) {
-							_isnull = (_isnull << TABLE_ITEM_NULL_BITS) + _data.isNull[j];
+							_isnull = _isnull + ((ull) _data.isNull[j] << (TABLE_ITEM_NULL_BITS * j));
 							if (((j + 1) % 32 == 0) || (j == _data.isNull.size() - 1)) {
 								b = io->writeUint(b, _isnull);
 								_isnull = 0;
@@ -82,13 +84,16 @@ public:
 						for (int j = 0; j < _data.data.size(); ++j) {
 							b = _data.data[j].write(b, io);
 						}
+						//更新空槽数
+						_empty = _empty - 1;
+						next_b = io->writeUint(next_b, _empty);
 						//更新next指针
 						io->readUint(b, _next);
 						while (next > 0) {
 							if (_next != 0) {
 								next_b = io->writeUint(next_b, _next + next);
 							}
-							//_next = 0 代表后面已经没有空槽了
+							//后面已经没有空槽了
 							else {
 								next_b = io->writeUint(next_b, 0);
 							}
@@ -103,6 +108,49 @@ public:
 						pageID = pageID + 1;
 					}
 				}
+			}
+		}
+		return 0;
+	}
+	//删除记录
+	int deleteData(BufPageManager* bpm, int fileID, Column &header, Data &data) {
+		int index;
+		BufType b;
+		for (int pageID = 1; pageID <= header.pages; pageID++) {
+			b = bpm->getPage(fileID, pageID, index);
+			bpm->access(index);
+			uint _empty;
+			b = io->readUint(b, _empty);
+			if (_empty >= header.count) {
+				continue;
+			}
+			uint count = header.count;
+			while (count > 0) {
+				Data _data = Data();
+				uint _next;
+				b = io->readUint(b, _next);
+				b = io->readUlong(b, _data.rid);
+				for (int i = 0; i < (header.type.size() + 31) / 32; ++i) {
+					uint _isnull;
+					b = io->readUint(b, _isnull);
+					for (int j = i * 32; j < (i + 1) * 32; ++j) {
+						if (j >= header.type.size()) {
+							break;
+						}
+						_data.isNull.push_back(_isnull % (1 << TABLE_ITEM_NULL_BITS));
+						_isnull = _isnull >> TABLE_ITEM_NULL_BITS;
+					}
+				}
+				for (int i = 0; i < header.type.size(); ++i) {
+					Types item = Types(header.type[i], 0);
+					item.length = header.length[i];
+					b = item.read(b, io);
+					_data.data.push_back(item);
+					item.print();
+					cout << " ";
+				}
+				cout << endl;
+				count--;
 			}
 		}
 		return 0;
@@ -134,7 +182,7 @@ public:
 		BufType b = bpm->getPage(fileID, pageID, index);
 		bpm->access(index);
 		Column column;
-		b = io->readChar(b, column.schema, TABLE_HEADER_NAME_BITS);
+		b = io->readChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
 		b = io->readUint(b, column.major);
 		b = io->readUint(b, column.pages);
 		//读取列项，依次读取类型、大小、是否可空、名字
