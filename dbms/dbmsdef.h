@@ -25,4 +25,7 @@
 #define TABLE_ITEM_LONGINT_SIZE 8
 #define TABLE_ITEM_CHAR_SIZE 1
 
+const std::string separator = "/";
+const std::string dbtype = ".db";
+
 #endif /* DBMS_DBMSDEF_H_ */

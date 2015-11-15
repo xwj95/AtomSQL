@@ -9,10 +9,7 @@
 #define DBMS_DBMS_H_
 
 #include "../type/integer.h"
-#include "io.h"
-#include "data.h"
-#include "column.h"
-#include "dbmsdef.h"
+#include "tableManager.h"
 #include <algorithm>
 #include <string>
 #include <map>
@@ -20,130 +17,44 @@
 class Dbms {
 	FileManager* fm;
 	BufPageManager* bpm;
-	IO io;
+	tableManager* tb;
+	IO* io;
 	map<std::string, int> files;
 	map<std::string, Column> headers;
 	std::string directory;
-	const std::string separator = "/";
-	const std::string dbtype = ".db";
-	int writeData(int fileID, Column column, std::vector<Data> data) {
-		Column header = readHeader(fileID, 0);
-		int pageID = 1;
-		int index;
-		BufType b;
-		if (pageID <= header.pages) {
-			b = bpm->getPage(fileID, pageID, index);
-			bpm->access(index);
-			bpm->markDirty(index);
-		}
-		for (int i = 0; i < data.size(); ++i) {
-			while (pageID > header.pages) {
-				header.pages = header.pages + 1;
-				int header_index;
-				BufType header_b = bpm->getPage(fileID, 0, header_index);
-				header_b = header_b + TABLE_HEADER_SCHEMA_BITS / 4 + TABLE_HEADER_MAJOR_SIZE;
-				header_b = io.writeInt(header_b, header.pages);
-				bpm->markDirty(header_index);
-				b = bpm->allocPage(fileID, pageID, index, true);
-				BufType _b;
-				for (int i = 0; i < PAGE_SIZE / column.size; ++i) {
-					if (i < PAGE_SIZE / column.size - 1) {
-						_b = io.writeInt(_b, 1);
-					}
-					else {
-						_b = io.writeInt(_b, 0);
-					}
-					_b = _b + (column.size - (TABLE_ITEM_NULL_BITS + TABLE_ITEM_NEXT_BITS) / 8) / sizeof(uint);
-				}
-				bpm->markDirty(index);
-			}
-			int next = b[0] & ((1 << TABLE_ITEM_NEXT_BITS) - 1);
-			if (next > 0) {
-				//
-			}
-		}
-	}
-	void writeHeader(int fileID, int pageID, Column column) {
-		int index;
-		BufType b = bpm->allocPage(fileID, pageID, index, true);
-//		BufType c = b;
-		b = io.writeChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
-		b = io.writeInt(b, column.major);
-		b = io.writeInt(b, column.pages);
-		for (int i = 0; i < column.type.size(); ++i) {
-			uint x = column.type[i];
-			x = x << TABLE_HEADER_LENGTH_BITS;
-			x = x + (column.length[i] & ((1 << TABLE_HEADER_LENGTH_BITS) - 1));
-			x = x << TABLE_HEADER_NULL_BITS;
-			x = x + column.canNull[i];
-			b = io.writeInt(b, x);
-			b = io.writeChar(b, column.name[i], TABLE_HEADER_NAME_BITS);
-		}
-//		for (int i = 0; i < 2048; ++i) {
-//			cout << c[i] << ' ';
-//		}
-//		cout << " write end" << endl;
-		bpm->markDirty(index);
-	}
-	Column readHeader(int fileID, int pageID) {
-		int index;
-		BufType b = bpm->getPage(fileID, pageID, index);
-		bpm->access(index);
-//		for (int i = 0; i < 2048; ++i) {
-//			cout << b[i] << ' ';
-//		}
-//		cout << " read end" << endl;
-		Column column;
-		b = io.readChar(b, column.schema, TABLE_HEADER_NAME_BITS);
-		int major;
-		b = io.readInt(b, major);
-		column.major = (uint) major;
-		int pages;
-		b = io.readInt(b, pages);
-		column.pages = (uint) pages;
-		while (true) {
-			int _x;
-			b = io.readInt(b, _x);
-			uint x = (uint) _x;
-			if (x == 0) {
-				break;
-			}
-			column.canNull.push_back(x & ((1 << TABLE_HEADER_NULL_BITS) - 1));
-			x = x >> TABLE_HEADER_NULL_BITS;
-			column.length.push_back(x & ((1 << TABLE_HEADER_LENGTH_BITS) - 1));
-			x = x >> TABLE_HEADER_LENGTH_BITS;
-			column.type.push_back(x & (1 << TABLE_HEADER_TYPES_BITS) - 1);
-			std::string name;
-			b = io.readChar(b, name, TABLE_HEADER_NAME_BITS);
-			column.name.push_back(name);
-		}
-		return column;
-	}
+	//切换目录，切换数据库时调用该接口
 	int useDirectory(std::string directory) {
+		//打开目录
 		DIR *dirp = opendir(directory.c_str());
 		if (dirp == NULL) {
 			return -1;
 		}
 		dirent *direntp;
+		//打开当前目录下的所有文件
 		while ((direntp = readdir(dirp)) != NULL) {
 			string file = std::string(direntp->d_name);
+			//判断文件是否是.db格式
 			if ((file.length() >= dbtype.length()) && (file.substr(file.length() - dbtype.length(), dbtype.length()) == dbtype)) {
 				file = file.substr(0, file.length() - dbtype.length());
+				//打开表，并读取当前表的信息页
 				int fileID;
 				fm->openFile(file.c_str(), fileID);
 				files[file] = fileID;
-				headers[file] = readHeader(fileID, 0);
+				headers[file] = tb->readHeader(bpm, fileID, 0);
 			}
 		}
 		closedir(dirp);
 		return 0;
 	}
+	//删除目录，删除数据库时调用该接口
 	int removeDirectory(std::string directory) {
+		//打开目录
 		DIR *dirp = opendir(directory.c_str());
 		if (dirp == NULL) {
 			return -1;
 		}
 		dirent *direntp;
+		//打开当前目录下的所有文件，并全部删除
 		while ((direntp = readdir(dirp)) != NULL) {
 			string file = std::string(direntp->d_name);
 			if ((file != ".") && (file != "..")) {
@@ -154,103 +65,67 @@ class Dbms {
 		closedir(dirp);
 		return 0;
 	}
+	//列出当前目录下所有表的文件名
 	int showDirectory(std::string directory) {
+		//打开目录
 		DIR *dirp = opendir(directory.c_str());
 		if (dirp == NULL) {
 			return -1;
 		}
 		dirent *direntp;
+		//打开当前目录下的所有文件
 		while ((direntp = readdir(dirp)) != NULL) {
 			string file = std::string(direntp->d_name);
+			//判断文件是否是.db格式
 			if ((file.length() >= dbtype.length()) && (file.substr(file.length() - dbtype.length(), dbtype.length()) == dbtype)) {
 				cout << file.substr(0, file.length() - dbtype.length()) << endl;
 			}
 		}
 		return 0;
 	}
-	int openTable(std::string tableName) {
+	//打开表
+	//exist为true时，表明本次查找希望指定表存在，从而可以打开表
+	//exist为false时，表明本次查找希望指定表不存在，从而可以创建新的表
+	int openTable(std::string tableName, bool exist = true) {
 		if (opendir(directory.c_str())) {
 			std::string file = directory + tableName + dbtype;
+			//表没有找到
 			if (files.find(tableName) == files.end()) {
-				cout << file << " does not exist." << endl;
-				return -1;
+				if (exist) {
+					cout << file << " does not exist." << endl;
+					return -1;
+				}
+				return 0;
 			}
 		}
 		else {
 			cout << "Please specify an existing database." << endl;
 			return -1;
 		}
-		return 0;
-	}
-	int findName(std::vector<std::string> &names, std::string name) {
-		std::vector<std::string>::iterator iter = find(names.begin(), names.end(), name);
-		if (iter == names.end()) {
-			cout << "Cannot find column " << name << endl;
+		if (!exist) {
+			cout << tableName + dbtype << " already exists." << endl;
 			return -1;
 		}
-		return iter - names.begin();
-	}
-	int findIndex(std::vector<int> &indexs, int index) {
-		std::vector<int>::iterator iter = find(indexs.begin(), indexs.end(), index);
-		if (iter == indexs.end()) {
-			return -1;
-		}
-		return iter - indexs.begin();
-	}
-	int getIndexs(Column column, Column _column, std::vector<int> &indexs, bool checkNull) {
-		if (column.name.size() < 1) {
-			column.name = _column.name;
-			column.canNull.clear();
-			for (int i = 0; i < column.name.size(); ++i) {
-				column.canNull.push_back(true);
-			}
-		}
-		indexs.clear();
-		for (int i = 0; i < column.name.size(); ++i) {
-			int _index = findName(_column.name, column.name[i]);
-			if (_index < 1) {
-				return -1;
-			}
-			indexs.push_back(_index);
-		}
-		if (checkNull) {
-			for (int i = 0; i < _column.name.size(); ++i) {
-				if ((!_column.canNull[i]) && (findIndex(indexs, i) < 0)) {
-					cout << "Column " << _column.name[i] << " cannot be null." << endl;
-					return -1;
-				}
-			}
-		}
 		return 0;
 	}
-	int getWriteData(Column column, Column _column, std::vector<int> &indexs, std::vector<Data> &data, std::vector<Data> &_data) {
-		_data.clear();
-		for (int da = 0; da < data.size(); ++da) {
-			std::vector<Types> _data_row = data[da].data;
-			std::vector<bool> _isNull_row = data[da].isNull;
-			std::vector<Types> _data_row_write;
-			std::vector<bool> _isNull_row_write;
-			for (int i = 0; i < column.name.size(); ++i) {
-				_data_row_write.push_back(Integer(0));
-				_isNull_row_write.push_back(true);
-			}
-			for (int i = 0; i < _data.size(); ++i) {
-				int index = indexs[i];
-				if (_isNull_row[index] && !_column.canNull[index]) {
-					cout << "Cannot insert null in column " << _column.name[index] << "." << endl;
-					return -1;
-				}
-				if (!_isNull_row[index]) {
-					_isNull_row_write[index] = false;
-					_data_row_write[index] = _data_row[index];
-				}
-			}
-			Data _data_write;
-			_data_write.data = _data_row_write;
-			_data_write.isNull = _isNull_row_write;
-			_data.push_back(_data_write);
+public:
+	Dbms() {
+		fm = NULL;
+		bpm = NULL;
+		files.clear();
+		headers.clear();
+		directory = "";
+		io = new IO();
+		tb = new tableManager(io);
+	}
+	~Dbms() {
+		clear();
+		if (tb != NULL) {
+			delete tb;
 		}
-		return 0;
+		if (io != NULL) {
+			delete io;
+		}
 	}
 	void clear() {
 		if (bpm != NULL) {
@@ -262,29 +137,21 @@ class Dbms {
 			fm = NULL;
 		}
 	}
-public:
-	Dbms() {
-		fm = NULL;
-		bpm = NULL;
-		files.clear();
-		headers.clear();
-		io = IO();
-		directory = "";
-	}
-	~Dbms() {
-		clear();
-	}
+	//创建数据库
 	int createDatabase(std::string dbName) {
 		int result = mkdir(dbName.c_str(), S_IRWXU);
 		return result;
 	}
+	//删除数据库
 	int dropDatabase(std::string dbName) {
+		//如果待删除的数据库是当前数据库，则清除文件和表的信息
 		if (directory == dbName + separator) {
 			directory = "";
 			files.clear();
 			headers.clear();
 			clear();
 		}
+		//待删除数据库不存在
 		if (removeDirectory(dbName)) {
 			cout << dbName << " does not exist." << endl;
 			return -1;
@@ -292,13 +159,17 @@ public:
 		int result = rmdir(dbName.c_str());
 		return result;
 	}
+	//切换数据库
 	int useDatabase(std::string dbName) {
 		std::string _directory = dbName + separator;
+		//如果不是当前数据库，则执行切换，否则不执行切换
 		if (directory != _directory) {
+			//待切换数据库不存在
 			if (!opendir(_directory.c_str())) {
 				cout << dbName << " does not exist." << endl;
 				return -1;
 			}
+			//切换目录，并获取所有表及信息
 			directory = _directory;
 			files.clear();
 			headers.clear();
@@ -308,85 +179,109 @@ public:
 		}
 		return 0;
 	}
+	//创建表
 	int createTable(std::string tableName, Column column) {
-		if (!openTable(tableName)) {
+		//待创建表已存在，或没有指定数据库
+		if (openTable(tableName, false)) {
 			return -1;
 		}
+		//表项为空
 		if (column.type.size() < 1) {
 			cout << "Empty table cannot be created." << endl;
 			return -1;
 		}
+		//表项超过上限
 		if (column.type.size() > MAX_COL_NUM) {
 			cout << "Column number cannot exceed " << MAX_COL_NUM << "." << endl;
 		}
 		std::string file = directory + tableName + dbtype;
+		//创建表
 		fm->createFile(file.c_str());
 		int fileID;
 		fm->openFile(file.c_str(), fileID);
+		//创建表的信息页
 		column.canNull[column.major] = false;
 		column.countSize();
 		files[tableName] = fileID;
 		headers[tableName] = column;
-		//create header page
-		writeHeader(fileID, 0, column);
+		//将表的信息写入文件第一页
+		tb->writeHeader(bpm, fileID, 0, column);
 		return 0;
 	}
+	//删除表
 	int dropTable(std::string tableName) {
+		//待删除表不存在，或没有指定数据库
 		if (openTable(tableName)) {
 			return -1;
 		}
+		//关闭文件，并清除表和信息的缓存
 		fm->closeFile(files[tableName]);
 		files.erase(tableName);
 		headers.erase(tableName);
 		std::string file = directory + tableName + dbtype;
+		//删除表
 		int result = remove(file.c_str());
 		return 0;
 	}
+	//列出当前数据库所有表
 	int showTables() {
 		if (opendir(directory.c_str())) {
 			showDirectory(directory);
 			return 0;
 		}
+		//没有指定数据库
 		else {
 			cout << "Please specify an existing database." << endl;
 			return -1;
 		}
 	}
+	//列出表的模式信息
 	int descTable(std::string tableName) {
-		if (!openTable(tableName)) {
+		//表不存在，或没有指定数据库
+		if (openTable(tableName)) {
 			return -1;
 		}
+		//直接从缓存中获取信息
 		Column column = headers[tableName];
 		cout << column.schema << endl;
 		return 0;
 	}
+	//插入记录
 	int insertData(std::string tableName, std::vector<Data> data, Column column) {
-		if (!openTable(tableName)) {
+		//表不存在，或没有指定数据库
+		if (openTable(tableName)) {
 			return -1;
 		}
+		//获取表的信息
 		Column _column = headers[tableName];
 		std::vector<int> indexs;
-		if (getIndexs(column, _column, indexs, true)) {
+		//获取待插入的列项的列数，并检查是否有非法情况
+		if (tb->getIndexs(column, _column, indexs, true)) {
 			return -1;
 		}
 		std::vector<Data> _data;
-		if (getWriteData(column, _column, indexs, data, _data)) {
+		//将记录转化为文件中存储格式，并检查是否有非法情况
+		if (tb->getWriteData(column, _column, indexs, data, _data)) {
 			return -1;
 		}
+		//将记录插入表中
 		std::string file = directory + tableName + dbtype;
 		int fileID;
 		fm->openFile(file.c_str(), fileID);
-		if (writeData(fileID, _column, _data)) {
+		if (tb->writeData(bpm, fileID, _column, _data)) {
 			return -1;
 		}
 		return 0;
 	}
+	//删除记录
 	int deleteData(std::string tableName, Data data) {
 		return 0;
 	}
+	//更新记录
 	int updateData(std::string tableName, Data data) {
 		return 0;
 	}
+	//查找记录
 	int selectData(std::string tableName, Data data, Data &result) {
 		return 0;
 	}
