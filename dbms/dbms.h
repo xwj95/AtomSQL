@@ -248,7 +248,7 @@ public:
 		return 0;
 	}
 	//插入记录
-	int insertData(string tableName, vector<Data> &data, Column column) {
+	int insertData(string tableName, vector<Data> &data_insert, Column column) {
 		//表不存在，或没有指定数据库
 		if (openTable(tableName)) {
 			return -1;
@@ -260,15 +260,15 @@ public:
 		if (tb->getIndexs(column, header, indexs, true)) {
 			return -1;
 		}
-		vector<Data> write_data;
+		vector<Data> data_write;
 		//将记录转化为文件中存储格式，并检查是否有非法情况
-		if (tb->getWriteData(column, header, indexs, data, write_data)) {
+		if (tb->getWriteData(column, header, indexs, data_insert, data_write)) {
 			return -1;
 		}
 		//将记录插入表中
 		string file = directory + tableName + dbtype;
 		int fileID = files[tableName];
-		int result = tb->writeData(fileID, header, write_data);
+		int result = tb->writeData(fileID, header, data_write);
 		headers[tableName] = header;
 		return result;
 	}

@@ -172,6 +172,7 @@ public:
 						break;
 					}
 				}
+				b = data_b;
 				count++;
 			}
 			pageID++;
@@ -211,7 +212,7 @@ public:
 		int index;
 		//读取元数据页，并依次读取模式信息、主键、页数
 		BufType b = bpm->getPage(fileID, pageID, index);
-		//BufType b = bpm->allocPage(fileID, pageID, index, true);
+//		BufType b = bpm->allocPage(fileID, pageID, index, true);
 //		io->print(b);
 		bpm->access(index);
 		Column column;
@@ -286,8 +287,8 @@ public:
 		return 0;
 	}
 	//将记录转化为文件中存储格式，并检查是否有非法情况
-	int getWriteData(Column &column, Column &header, vector<int> &indexs, vector<Data> &data, vector<Data> &_data) {
-		_data.clear();
+	int getWriteData(Column &column, Column &header, vector<int> &indexs, vector<Data> &data, vector<Data> &data_write) {
+		data_write.clear();
 		//检查每一行数据
 		for (int da = 0; da < data.size(); ++da) {
 			vector<Types> _data_row = data[da].data;
@@ -326,11 +327,11 @@ public:
 				}
 			}
 			//该行通过检测
-			Data _data_write;
-			_data_write.data = _data_row_write;
-			_data_write.isNull = _isNull_row_write;
-			_data_write.rid = data[da].rid;
-			_data.push_back(_data_write);
+			Data _data;
+			_data.data = _data_row_write;
+			_data.isNull = _isNull_row_write;
+			_data.rid = data[da].rid;
+			data_write.push_back(_data);
 		}
 		return 0;
 	}
