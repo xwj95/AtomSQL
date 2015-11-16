@@ -73,7 +73,7 @@ public:
 						Data _data = data_insert[i];
 						b = _data.write(b, io);
 						//更新空槽数
-						_empty = _empty - 1;
+						_empty--;
 						next_b = io->writeUint(next_b, _empty);
 						//更新next指针
 						io->readUint(b, _next);
@@ -86,7 +86,7 @@ public:
 								next_b = io->writeUint(next_b, 0);
 							}
 							next_b = next_b + (header.size - TABLE_ITEM_NEXT_SIZE) / sizeof(uint);
-							next = next - 1;
+							next--;
 						}
 						bpm->markDirty(index);
 						break;
@@ -107,31 +107,61 @@ public:
 		int pageID = 1;
 		int del = 0;
 		while (pageID <= header.pages) {
+			//当前页没有要删除的记录
 			if (pageID != page_delete[del]) {
 				pageID++;
 				continue;
 			}
 			b = bpm->getPage(fileID, pageID, index);
+			//保留页头指针
+			BufType header_b = b;
 			uint _empty;
 			b = io->readUint(b, _empty);
+			//该页全部为空槽
 			if (_empty >= header.count) {
 				continue;
 			}
 			bpm->access(index);
+			//依次访问每一个槽
 			uint count = 0;
 			while (count < header.count) {
 				Data _data = Data();
-				b = _data.read(b, io, header);
+				//读取记录
+				BufType data_b = _data.read(b, io, header);
 				if (index_delete[del] == count) {
-					//删除记录
+					if (_data.data.size() >= 1) {
+						//删除记录
+						data_b = _data.remove(b, io, (header.size - TABLE_ITEM_NEXT_SIZE) / sizeof(uint));
+						bpm->markDirty(index);
+						//更新空槽数
+						_empty++;
+						b = io->writeUint(header_b, _empty);
+						//更新next指针，再对槽进行遍历
+						while (b < data_b) {
+							uint _next;
+							io->readUint(b, _next);
+							//该槽的next指针指向的槽在当前空槽的后方，将该槽的next指针指向当前空槽
+							if ((b + (_next - 1) * header.size / sizeof(uint)) > header_b) {
+								_next = (data_b - b) * sizeof(uint) / header.size;
+								io->writeUint(b, _next);
+							}
+							//访问下一个槽
+							b = b + header.size / sizeof(uint);
+						}
+					}
+					//完成一次删除操作
 					del++;
+					//所有删除操作完成
 					if (del >= index_delete.size()) {
 						return 0;
 					}
+					//当前页的删除操作完成
 					if (pageID != page_delete[del]) {
 						break;
 					}
 				}
+				//访问下一个槽
+				b = data_b;
 				count++;
 			}
 			pageID++;
@@ -145,6 +175,7 @@ public:
 		int pageID = 1;
 		int upd = 0;
 		while (pageID <= header.pages) {
+			//当前页没有要更新的记录
 			if (pageID != page_update[upd]) {
 				pageID++;
 				continue;
@@ -152,26 +183,33 @@ public:
 			b = bpm->getPage(fileID, pageID, index);
 			uint _empty;
 			b = io->readUint(b, _empty);
+			//该页全部为空槽
 			if (_empty >= header.count) {
 				continue;
 			}
 			bpm->access(index);
+			//依次访问每一个槽
 			uint count = 0;
 			while (count < header.count) {
 				Data _data = Data();
+				//读取记录
 				BufType data_b = _data.read(b, io, header);
 				if (index_update[upd] == count) {
 					//更新记录
 					data_b = data_update[upd].update(b, io);
 					bpm->markDirty(index);
+					//完成一次更新操作
 					upd++;
+					//所有更新操作完成
 					if (upd >= index_update.size()) {
 						return 0;
 					}
+					//当前页的更新操作完成
 					if (pageID != page_update[upd]) {
 						break;
 					}
 				}
+				//访问下一个槽
 				b = data_b;
 				count++;
 			}
@@ -190,7 +228,6 @@ public:
 		else {
 			b = bpm->getPage(fileID, pageID, index);
 		}
-//		BufType c = b;
 		b = io->writeChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
 		b = io->writeUint(b, column.major);
 		b = io->writeUint(b, column.pages);
@@ -204,7 +241,6 @@ public:
 			b = io->writeUint(b, x);
 			b = io->writeChar(b, column.name[i], TABLE_HEADER_NAME_BITS);
 		}
-//		io->print(c);
 		bpm->markDirty(index);
 	}
 	//读取表的元数据
@@ -212,8 +248,6 @@ public:
 		int index;
 		//读取元数据页，并依次读取模式信息、主键、页数
 		BufType b = bpm->getPage(fileID, pageID, index);
-//		BufType b = bpm->allocPage(fileID, pageID, index, true);
-//		io->print(b);
 		bpm->access(index);
 		Column column;
 		b = io->readChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
