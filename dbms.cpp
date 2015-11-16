@@ -34,6 +34,18 @@ vector<Data> sampleData() {
 	sample_data.push_back(_data);
 	return sample_data;
 }
+vector<int> sampleInt() {
+	vector<int> sample_int;
+	sample_int.clear();
+	sample_int.push_back(7);
+	return sample_int;
+}
+vector<int> samplePage() {
+	vector<int> sample_page;
+	sample_page.clear();
+	sample_page.push_back(1);
+	return sample_page;
+}
 
 void test1(Dbms *dbms) {
 	dbms->showTables();
@@ -51,12 +63,16 @@ void test1(Dbms *dbms) {
 void test2(Dbms *dbms) {
 	vector<Data> sample_data = sampleData();
 	dbms->insertData("table1", sample_data, Column());
-//	dbms->useDatabase("database2");
-//	dbms->useDatabase("database1");
-	dbms->deleteData("table1", sample_data[0]);
+	dbms->useDatabase("database2");
+	dbms->useDatabase("database1");
+	dbms->showTables();
+	vector<int> sample_index = sampleInt();
+	vector<int> sample_page = samplePage();
+	dbms->deleteData("table1", sample_page, sample_index);
 }
 
 int main() {
+	MyBitMap::initConst();
 	Dbms *dbms = new Dbms();
 	//测试样例
 	Column column = sampleColumn();
@@ -64,6 +80,8 @@ int main() {
 	dbms->createDatabase("database2");
 	dbms->createDatabase("database3");
 	dbms->useDatabase("database1");
+	dbms->dropTable("table1");
+	dbms->dropTable("table2");
 	dbms->createTable("table1", column);
 	dbms->createTable("table2", column);
 //	test1(dbms);

@@ -14,27 +14,30 @@
 #include "dbmsdef.h"
 
 class tableManager {
+	BufPageManager *bpm;
 	IO *io;
 public:
-	tableManager(IO *_io) {
+	tableManager(BufPageManager *_bpm, IO *_io) {
+		bpm = _bpm;
 		io = _io;
 	}
 	~tableManager() {
 	}
 	//写入记录
-	int writeData(BufPageManager* bpm, int fileID, Column &header, std::vector<Data> &data) {
+	int writeData(int fileID, Column &header, vector<Data> &data_insert) {
 		int pageID = 1;
 		int index;
 		BufType b;
-		for (int i = 0; i < data.size(); ++i) {
+		for (int i = 0; i < data_insert.size(); ++i) {
 			while (true) {
 				if (pageID > header.pages) {
 					//需要申请新的页面
 					header.pages = header.pages + 1;
-					//修改存储表的信息的页面
+					//修改表的元数据
 					int header_index;
 					BufType header_b = bpm->getPage(fileID, 0, header_index);
 					header_b = header_b + ((TABLE_HEADER_SCHEMA_BITS + 3) / 4 * 4 + TABLE_HEADER_MAJOR_SIZE) / sizeof(uint);
+					//只修改页数
 					header_b = io->writeUint(header_b, header.pages);
 					bpm->markDirty(header_index);
 					//申请新的页面
@@ -63,27 +66,12 @@ public:
 					if (next > 0) {
 						//当前页面未满，将当前记录写入空槽
 						b = b + (next - 1) * header.size / sizeof(uint);
-						Data _data = data[i];
 						//查找下一个空槽
 						uint _next;
 						io->readUint(b + header.size, _next);
-						//next指针暂时指向自己
-						b = io->writeUint(b, 1);
-						//写入rid值
-						b = io->writeUlong(b, _data.rid);
-						//写入每一列项是否为空
-						uint _isnull = 0;
-						for (int j = 0; j < _data.isNull.size(); ++j) {
-							_isnull = _isnull + ((ull) _data.isNull[j] << (TABLE_ITEM_NULL_BITS * j));
-							if (((j + 1) % 32 == 0) || (j == _data.isNull.size() - 1)) {
-								b = io->writeUint(b, _isnull);
-								_isnull = 0;
-							}
-						}
-						//写入每一列项的数据
-						for (int j = 0; j < _data.data.size(); ++j) {
-							b = _data.data[j].write(b, io);
-						}
+						//写入记录
+						Data _data = data_insert[i];
+						b = _data.write(b, io);
 						//更新空槽数
 						_empty = _empty - 1;
 						next_b = io->writeUint(next_b, _empty);
@@ -113,53 +101,95 @@ public:
 		return 0;
 	}
 	//删除记录
-	int deleteData(BufPageManager* bpm, int fileID, Column &header, Data &data) {
+	int deleteData(int fileID, Column &header, vector<int> &page_delete, vector<int> &index_delete) {
 		int index;
 		BufType b;
-		for (int pageID = 1; pageID <= header.pages; pageID++) {
+		int pageID = 1;
+		int del = 0;
+		while (pageID <= header.pages) {
+			if (pageID != page_delete[del]) {
+				pageID++;
+				continue;
+			}
 			b = bpm->getPage(fileID, pageID, index);
-			bpm->access(index);
 			uint _empty;
 			b = io->readUint(b, _empty);
 			if (_empty >= header.count) {
 				continue;
 			}
-			uint count = header.count;
-			while (count > 0) {
+			bpm->access(index);
+			uint count = 0;
+			while (count < header.count) {
 				Data _data = Data();
-				uint _next;
-				b = io->readUint(b, _next);
-				b = io->readUlong(b, _data.rid);
-				for (int i = 0; i < (header.type.size() + 31) / 32; ++i) {
-					uint _isnull;
-					b = io->readUint(b, _isnull);
-					for (int j = i * 32; j < (i + 1) * 32; ++j) {
-						if (j >= header.type.size()) {
-							break;
-						}
-						_data.isNull.push_back(_isnull % (1 << TABLE_ITEM_NULL_BITS));
-						_isnull = _isnull >> TABLE_ITEM_NULL_BITS;
+				b = _data.read(b, io, header);
+				if (index_delete[del] == count) {
+					//删除记录
+					del++;
+					if (del >= index_delete.size()) {
+						return 0;
+					}
+					if (pageID != page_delete[del]) {
+						break;
 					}
 				}
-				for (int i = 0; i < header.type.size(); ++i) {
-					Types item = Types(header.type[i], 0);
-					item.length = header.length[i];
-					b = item.read(b, io);
-					_data.data.push_back(item);
-					item.print();
-					cout << " ";
-				}
-				cout << endl;
-				count--;
+				count++;
 			}
+			pageID++;
 		}
 		return 0;
 	}
-	//生成表的信息
-	void writeHeader(BufPageManager *bpm, int fileID, int pageID, Column &column) {
+	//更新记录
+	int updateData(int fileID, Column &header, vector<int> &page_update, vector<int> &index_update, vector<Data> &data_update) {
 		int index;
-		//申请信息页，并依次写入模式信息、主键、页数
-		BufType b = bpm->allocPage(fileID, pageID, index, true);
+		BufType b;
+		int pageID = 1;
+		int upd = 0;
+		while (pageID <= header.pages) {
+			if (pageID != page_update[upd]) {
+				pageID++;
+				continue;
+			}
+			b = bpm->getPage(fileID, pageID, index);
+			uint _empty;
+			b = io->readUint(b, _empty);
+			if (_empty >= header.count) {
+				continue;
+			}
+			bpm->access(index);
+			uint count = 0;
+			while (count < header.count) {
+				Data _data = Data();
+				BufType data_b = _data.read(b, io, header);
+				if (index_update[upd] == count) {
+					//更新记录
+					data_b = data_update[upd].update(b, io);
+					bpm->markDirty(index);
+					upd++;
+					if (upd >= index_update.size()) {
+						return 0;
+					}
+					if (pageID != page_update[upd]) {
+						break;
+					}
+				}
+				count++;
+			}
+			pageID++;
+		}
+		return 0;
+	}
+	//生成表的元数据
+	void writeHeader(int fileID, int pageID, Column &column, bool alloc = true) {
+		int index;
+		//申请元数据页，并依次写入模式信息、主键、页数
+		BufType b;
+		if (alloc) {
+			b = bpm->allocPage(fileID, pageID, index, true);
+		}
+		else {
+			b = bpm->getPage(fileID, pageID, index);
+		}
+//		BufType c = b;
 		b = io->writeChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
 		b = io->writeUint(b, column.major);
 		b = io->writeUint(b, column.pages);
@@ -173,13 +203,16 @@ public:
 			b = io->writeUint(b, x);
 			b = io->writeChar(b, column.name[i], TABLE_HEADER_NAME_BITS);
 		}
+//		io->print(c);
 		bpm->markDirty(index);
 	}
-	//读取表的信息
-	Column readHeader(BufPageManager *bpm, int fileID, int pageID) {
+	//读取表的元数据
+	Column readHeader(int fileID, int pageID) {
 		int index;
-		//读取信息页，并依次读取模式信息、主键、页数
+		//读取元数据页，并依次读取模式信息、主键、页数
 		BufType b = bpm->getPage(fileID, pageID, index);
+		//BufType b = bpm->allocPage(fileID, pageID, index, true);
+//		io->print(b);
 		bpm->access(index);
 		Column column;
 		b = io->readChar(b, column.schema, TABLE_HEADER_SCHEMA_BITS);
@@ -197,15 +230,16 @@ public:
 			column.length.push_back(x & ((1 << TABLE_HEADER_LENGTH_BITS) - 1));
 			x = x >> TABLE_HEADER_LENGTH_BITS;
 			column.type.push_back(x & (1 << TABLE_HEADER_TYPES_BITS) - 1);
-			std::string name;
+			string name;
 			b = io->readChar(b, name, TABLE_HEADER_NAME_BITS);
 			column.name.push_back(name);
 		}
+		column.countSize();
 		return column;
 	}
 	//根据列名查找对应下标
-	int findName(std::vector<std::string> &names, std::string name) {
-		std::vector<std::string>::iterator iter = find(names.begin(), names.end(), name);
+	int findName(vector<string> &names, string name) {
+		vector<string>::iterator iter = find(names.begin(), names.end(), name);
 		if (iter == names.end()) {
 			cout << "Cannot find column " << name << endl;
 			return -1;
@@ -213,15 +247,15 @@ public:
 		return iter - names.begin();
 	}
 	//查找给定整数在给定整数向量中的位置
-	int findIndex(std::vector<int> &indexs, int index) {
-		std::vector<int>::iterator iter = find(indexs.begin(), indexs.end(), index);
+	int findIndex(vector<int> &indexs, int index) {
+		vector<int>::iterator iter = find(indexs.begin(), indexs.end(), index);
 		if (iter == indexs.end()) {
 			return -1;
 		}
 		return iter - indexs.begin();
 	}
 	//获取待插入的列项的列数，并检查是否有非法情况
-	int getIndexs(Column &column, Column &header, std::vector<int> &indexs, bool checkNull) {
+	int getIndexs(Column &column, Column &header, vector<int> &indexs, bool checkNull) {
 		//待插入列项为空，默认为插入全部列项
 		if (column.name.size() < 1) {
 			column.name = header.name;
@@ -252,15 +286,15 @@ public:
 		return 0;
 	}
 	//将记录转化为文件中存储格式，并检查是否有非法情况
-	int getWriteData(Column &column, Column &header, std::vector<int> &indexs, std::vector<Data> &data, std::vector<Data> &_data) {
+	int getWriteData(Column &column, Column &header, vector<int> &indexs, vector<Data> &data, vector<Data> &_data) {
 		_data.clear();
 		//检查每一行数据
 		for (int da = 0; da < data.size(); ++da) {
-			std::vector<Types> _data_row = data[da].data;
-			std::vector<bool> _isNull_row = data[da].isNull;
+			vector<Types> _data_row = data[da].data;
+			vector<bool> _isNull_row = data[da].isNull;
 			//插入列表项初始化，初始全部为空
-			std::vector<Types> _data_row_write;
-			std::vector<bool> _isNull_row_write;
+			vector<Types> _data_row_write;
+			vector<bool> _isNull_row_write;
 			for (int i = 0; i < column.name.size(); ++i) {
 				switch (header.type[i]) {
 				case Type::Char:

@@ -57,7 +57,7 @@ public:
 		ulonginteger = (((ull) high << 32) + low);
 		return b;
 	}
-	BufType writeChar(BufType b, std::string str, int length = 0) {
+	BufType writeChar(BufType b, string str, int length = 0) {
 		if (length == 0) {
 			length = str.length();
 		}
@@ -77,10 +77,10 @@ public:
 		}
 		return b;
 	}
-	BufType readChar(BufType b, std::string &str, int length) {
+	BufType readChar(BufType b, string &str, int length) {
 		int i = 0;
 		int len = length;
-		str = std::string(length, '\0');
+		str = string(length, '\0');
 		while (true) {
 			uint x = b[0];
 			for (int d = 3; d >= 0; --d) {
@@ -105,7 +105,7 @@ public:
 				cout << endl;
 			}
 		}
-		cout << endl;
+		cout << endl << "================" << endl;
 	}
 };
 

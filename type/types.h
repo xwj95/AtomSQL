@@ -17,7 +17,7 @@ public:
 	Type type;
 	int int_value;
 	ll longint_value;
-	std::string varchar_value;
+	string varchar_value;
 	uint length;
 	Types(uint _type, ll value) {
 		type = (Type) _type;
@@ -32,7 +32,7 @@ public:
 			break;
 		}
 	}
-	Types(uint _type, std::string value, uint len) {
+	Types(uint _type, string value, uint len) {
 		type = (Type) _type;
 		switch (type) {
 		case Type::Varchar:
@@ -60,6 +60,23 @@ public:
 			break;
 		}
 		return 0;
+	}
+	void print() {
+		switch (type) {
+		case Type::Char:
+			break;
+		case Type::Int:
+			cout << int_value;
+			break;
+		case Type::Longint:
+			cout << longint_value;
+			break;
+		case Type::Varchar:
+			cout << varchar_value;
+			break;
+		default:
+			break;
+		}
 	}
 	BufType write(BufType b, IO *io) {
 		switch (type) {

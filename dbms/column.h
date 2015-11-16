@@ -15,11 +15,11 @@
 
 class Column {
 public:
-	std::string schema;
-	std::vector<uint> type;
-	std::vector<uint> length;
-	std::vector<bool> canNull;
-	std::vector<std::string> name;
+	string schema;
+	vector<uint> type;
+	vector<uint> length;
+	vector<bool> canNull;
+	vector<string> name;
 	uint major;
 	uint pages;
 	uint size;

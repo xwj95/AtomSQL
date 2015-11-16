@@ -118,6 +118,11 @@ public:
 		_openFile(name, fileID);
 		return true;
 	}
+	void closeAll() {
+		for (int i = 0; i < MAX_FILE_NUM; ++i) {
+			closeFile(i);
+		}
+	}
 	int newType() {
 		int t = tm->findLeftOne();
 		tm->setBit(t, 0);
