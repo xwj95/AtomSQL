@@ -1,10 +1,3 @@
-/*
- * io.h
- *
- *  Created on: 2015年11月14日
- *      Author: Xwj95
- */
-
 #ifndef DBMS_IO_H_
 #define DBMS_IO_H_
 
@@ -12,52 +5,52 @@
 
 class IO {
 public:
-	BufType writeInt(BufType b, int integer) {
-		memcpy(b, &integer, sizeof(int));
+	BufType writeInt(BufType b, int value) {
+		memcpy(b, &value, sizeof(int));
 		return (uint*) b + 1;
 	}
-	BufType readInt(BufType b, int &integer) {
-		integer = b[0];
+	BufType readInt(BufType b, int &value) {
+		value = b[0];
 		return (uint*) b + 1;
 	}
-	BufType writeUint(BufType b, uint integer) {
-		memcpy(b, &integer, sizeof(uint));
+	BufType writeUInt(BufType b, uint value) {
+		memcpy(b, &value, sizeof(uint));
 		return (uint*) b + 1;
 	}
-	BufType readUint(BufType b, uint &integer) {
-		integer = b[0];
+	BufType readUInt(BufType b, uint &value) {
+		value = b[0];
 		return (uint*) b + 1;
 	}
-	BufType writeLong(BufType b, ll longinteger) {
-		ull longint = (ull) longinteger;
-		uint low = longint & (((ull) 1 << 32) - 1);
-		uint high = longint >> 32;
-		b = writeUint(b, high);
-		b = writeUint(b, low);
+	BufType writeLongint(BufType b, ll value) {
+		ull long_value = (ull) value;
+		uint low = long_value & (((ull) 1 << 32) - 1);
+		uint high = long_value >> 32;
+		b = writeUInt(b, high);
+		b = writeUInt(b, low);
 		return b;
 	}
-	BufType readLong(BufType b, ll &longinteger) {
+	BufType readLongint(BufType b, ll &value) {
 		uint high, low;
-		b = readUint(b, high);
-		b = readUint(b, low);
-		longinteger = (ll) (((ull) high << 32) + low);
+		b = readUInt(b, high);
+		b = readUInt(b, low);
+		value = (ll) (((ull) high << 32) + low);
 		return b;
 	}
-	BufType writeUlong(BufType b, ull ulonginteger) {
-		uint low = ulonginteger & (((ull) 1 << 32) - 1);
-		uint high = ulonginteger >> 32;
-		b = writeUint(b, high);
-		b = writeUint(b, low);
+	BufType writeULongint(BufType b, ull value) {
+		uint low = value & (((ull) 1 << 32) - 1);
+		uint high = value >> 32;
+		b = writeUInt(b, high);
+		b = writeUInt(b, low);
 		return b;
 	}
-	BufType readUlong(BufType b, ull &ulonginteger) {
+	BufType readULongint(BufType b, ull &value) {
 		uint high, low;
-		b = readUint(b, high);
-		b = readUint(b, low);
-		ulonginteger = (((ull) high << 32) + low);
+		b = readUInt(b, high);
+		b = readUInt(b, low);
+		value = (((ull) high << 32) + low);
 		return b;
 	}
-	BufType writeChar(BufType b, string str, int length = 0) {
+	BufType writeString(BufType b, string str, int length = 0) {
 		if (length == 0) {
 			length = str.length();
 		}
@@ -77,7 +70,7 @@ public:
 		}
 		return b;
 	}
-	BufType readChar(BufType b, string &str, int length) {
+	BufType readString(BufType b, string &str, int length) {
 		int i = 0;
 		int len = length;
 		str = string(length, '\0');
@@ -109,4 +102,4 @@ public:
 	}
 };
 
-#endif /* DBMS_IO_H_ */
+#endif
