@@ -4,6 +4,7 @@
 #include "filedef.h"
 #include "tablemanager.h"
 #include "../table/columns.h"
+#include "../table/rows.h"
 #include <map>
 
 class Document {
@@ -34,7 +35,7 @@ class Document {
 			return exist ? -3 : 0;
 		}
 		else {
-			return exist ? 0 : -3;
+			return exist ? 0 : -4;
 		}
 	}
 
@@ -43,6 +44,14 @@ class Document {
 		string file = directory + fileName + dbtype;
 		fm->createFile(file.c_str());
 		fm->openFile(file.c_str(), fileID);
+		return 0;
+	}
+
+	//删除文件
+	int deleteFile(string fileName) {
+		string file = directory + fileName + dbtype;
+		fm->closeFile(files[fileName]);
+		remove(file.c_str());
 		return 0;
 	}
 
@@ -80,6 +89,10 @@ public:
 		if (io != NULL) {
 			delete io;
 		}
+	}
+
+	string getDirectory() {
+		return directory;
 	}
 
 	//创建目录
@@ -130,9 +143,8 @@ public:
 			return 0;
 		}
 
-		DIR *dirp = openDirectory(useDirectory);
 		//待切换数据库不存在
-		if (dirp == NULL) {
+		if (openDirectory(useDirectory) == NULL) {
 			return -1;
 		}
 
@@ -141,6 +153,7 @@ public:
 		this->directory = useDirectory;
 
 		//打开当前目录下的所有文件
+		DIR *dirp = openDirectory(this->directory);
 		dirent *direntp;
 		while ((direntp = readdir(dirp)) != NULL) {
 			string file = string(direntp->d_name);
@@ -149,6 +162,7 @@ public:
 			}
 			string tableName = file.substr(0, file.length() - dbtype.length());
 			string typeName = file.substr(file.length() - dbtype.length(), dbtype.length());
+
 			//判断文件是否是.db格式
 			if (typeName == dbtype) {
 				int fileID;
@@ -162,14 +176,13 @@ public:
 	}
 
 	//列出当前目录下所有表的文件名
-	int showDirectory(string directory) {
+	int showDirectory() {
 
 		//打开目录
 		DIR *dirp = openDirectory(directory);
-
-		//待删除目录不存在
+		//待列表目录不存在
 		if (dirp == NULL) {
-			return 1;
+			return -1;
 		}
 
 		//打开当前目录下的所有文件
@@ -202,7 +215,52 @@ public:
 		headers[fileName] = header;
 
 		//将表的元数据写入第零页
-		tb->writeHeader(fileID, 0, header);
+		tb->writeHeader(fileID, 0, header, true);
+		return 0;
+	}
+
+	//删除文件
+	int dropFile(string fileName) {
+
+		int result = findFile(fileName, true);
+		//待删除文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
+
+		//关闭文件，并清除文件和元数据的缓存
+		deleteFile(fileName);
+		files.erase(fileName);
+		headers.erase(fileName);
+		return 0;
+	}
+
+	//显示文件
+	int showFile(string fileName) {
+
+		int result = findFile(fileName, true);
+		//待显示文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
+		//直接从缓存中获取元数据
+		Columns header = headers[fileName];
+		cout << header.schema << endl;
+		return 0;
+	}
+
+	//插入记录
+	int insertRows(string fileName, Rows &rows) {
+
+		int result = findFile(fileName, true);
+		//文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
+		//获取元数据
+		Columns header = headers[fileName];
+		int fileID = files[fileName];
+		int pageID = 1;
 		return 0;
 	}
 };

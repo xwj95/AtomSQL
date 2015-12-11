@@ -3,13 +3,31 @@
 
 #include "../filesystem/filesystem.h"
 #include "../table/columns.h"
-#include "../table/row.h"
+#include "../table/rows.h"
 #include "../utils/document.h"
 #include "../utils/io.h"
 
 class Dbms {
 
 	Document *document;
+
+	void error(int type, string dbName, string tableName) {
+		if (type == 0) {
+			return;
+		}
+		if (type == -1) {
+			cout << dbName << " does not exist." << endl;
+		}
+		if (type == -2) {
+			cout << "Please specify an existing database." << endl;
+		}
+		if (type == -3) {
+			cout << tableName + dbtype << " does not exist." << endl;
+		}
+		if (type == -4) {
+			cout << tableName + dbtype << " already exists." << endl;
+		}
+	}
 
 public:
 
@@ -25,72 +43,73 @@ public:
 
 	//创建数据库
 	int createDatabase(string dbName) {
-		return document->createDirectory(dbName);
+		int result = document->createDirectory(dbName);
+		error(result, dbName, "");
+		return result;
 	}
 
 	//删除数据库
 	int dropDatabase(string dbName) {
 		int result = document->removeDirectory(dbName);
-		if (result == -1) {
-			cout << dbName << " does not exist." << endl;
-		}
+		error(result, dbName, "");
+		return result;
 	}
 
 	//切换数据库
 	int useDatabase(string dbName) {
 		int result = document->useDirectory(dbName);
-		if (result == -1) {
-			cout << dbName << " does not exist." << endl;
-		}
+		error(result, dbName, "");
 		return result;
 	}
 
 	//列出当前数据库所有表
 	int showTables() {
-
+		int result = document->showDirectory();
+		error(result, document->getDirectory(), "");
+		return result;
 	}
 
 	//列出表的模式信息
 	int descTable(string tableName) {
-
+		int result = document->showFile(tableName);
+		error(result, document->getDirectory(), tableName);
+		return result;
 	}
 
 	//创建表
 	int createTable(string tableName, Columns &header) {
 		int result = document->createFile(tableName, header);
-		if (result == -2) {
-			cout << "Please specify an existing database." << endl;
-			return result;
-		}
-		if (result == -3) {
-			cout << tableName + dbtype << " already exists." << endl;
-			return result;
-		}
+		error(result, document->getDirectory(), tableName);
+		return result;
 	}
 
 	//删除表
 	int dropTable(string tableName) {
-
+		int result = document->dropFile(tableName);
+		error(result, document->getDirectory(), tableName);
+		return result;
 	}
 
 	//插入记录
-	int insertRow(string tableName, Row &row) {
-
+	int insertRows(string tableName, Rows &rows) {
+		int result = document->insertRows(tableName, rows);
+		error(result, document->getDirectory(), tableName);
+		return result;
 	}
 
 	//删除记录
-	int deleteRow(string tableName, int delta) {
-
+	int deleteRows(string tableName, int delta) {
+		return 0;
 	}
 
 	//更新记录
-	int updateRow(string tableName, int delta, Row &row) {
-
+	int updateRows(string tableName, int delta, Rows &rows) {
+		return 0;
 	}
 
 	//查找记录
-	int selectRow(string tableName) {
-
+	int selectRows(string tableName) {
+		return 0;
 	}
 
 };

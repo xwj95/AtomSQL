@@ -7,7 +7,6 @@
 class Table {
 
 public:
-	string schema;
 	Columns header;
 	Rows rows;
 };

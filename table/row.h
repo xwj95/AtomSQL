@@ -90,7 +90,7 @@ public:
 		next = 1;
 		b = io->writeUInt(b, next);
 
-		//填充指定个数的零
+		//其余部分用零填充
 		for (int i = 0; i < (header.column.size() - TABLE_ITEM_NEXT_BYTE) / sizeof(uint); ++i) {
 			b = io->writeUInt(b, 0);
 		}
