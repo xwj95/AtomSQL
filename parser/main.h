@@ -97,7 +97,7 @@ enum AggFun {
 //
 enum SelectCombo {
   UNION_COMBO, INTERSECT_COMBO, EXCEPT_COMBO, AND_COMBO, OR_COMBO
-}
+};
 
 /*
 //

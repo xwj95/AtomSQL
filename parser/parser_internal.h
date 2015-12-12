@@ -105,8 +105,8 @@ enum NODEKIND {
     N_EXPR,
     N_TABLELIST,
     N_IN
-//};
-} NODEKIND;
+};
+//} NODEKIND;
 
 
 /*
@@ -305,6 +305,7 @@ typedef struct node{
  * function prototypes
  */
 //NODE *newnode(int kind);
+
 NODE *newnode(NODEKIND kind);
 NODE *create_table_node(char *relname, NODE *attrlist, NODE *keydeclist);
 NODE *create_index_node(char *relname, char *attrname);
@@ -343,7 +344,3 @@ int  yylex(void);
 int  yyparse(void);
 
 #endif
-
-
-
-
