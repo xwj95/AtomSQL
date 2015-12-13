@@ -165,13 +165,13 @@ node *use_database_node(char *dbname);
 node *desc_table_node(char *relname);
 node *show_table_node(char *relname);
 node *select_node(node *query, char *combo, node *select);
-node *query_node(int optdistinct, node *selectclause, node *tablelist, node *conditionlist, 
+node *query_node(char *optdistinct, node *selectclause, node *tablelist, node *conditionlist, 
                  node *order_relattr, node *group_relattr);
 node *insert_node(char *relname, node *valuelist);
 node *delete_node(char *relname, node *conditionlist);
 node *update_node(char *relname, node *relattr, node *value, node *conditionlist);
 node *relattr_node(char *relname, char *attrname);
-node *order_by_node(node *relattr, char *optasc);
+node *order_attr_node(node *relattr, char *optasc);
 node *aggrelattr_node(char *a, char *relname, char *attrname);
 node *condition_node(node *lhsRelattr, char *op, node *rhsRelattrOrValue);
 node *condition_list_node(node *boolterm, char *boolop, node *condlist);
@@ -358,7 +358,7 @@ node *show_table_node(char *relname)
  * query_node: allocates, initializes, and returns a pointer to a new
  * query node having the indicated values.
  */
-node *query_node(int optdistinct, node *selectclause, node *tablelist, node *conditionlist, 
+node *query_node(char *optdistinct, node *selectclause, node *tablelist, node *conditionlist, 
                  node *order_relattr, node *group_relattr)
 {
     node *n = newnode(N_QUERY);
@@ -462,7 +462,7 @@ node *update_node(char *relname, node *relattr, node *relorvalue,
  * orderattr_node: allocates, initializes, and returns a pointer to a new
  * relattr node having the indicated values.
  */
-node *order_by_node(node *relattr, char *optasc)
+node *order_attr_node(node *relattr, char *optasc)
 {
     node *n = newnode(N_ORDERATTR);
 

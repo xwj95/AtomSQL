@@ -61,7 +61,7 @@ struct node{
       /* QL component nodes */
       /* query node */
       struct{
-        int optdistinct;
+        char *optdistinct;
          struct node *selectclause;
          struct node *tablelist;
          struct node *conditionlist;
@@ -105,8 +105,8 @@ struct node{
 
       /* order + relation attribute node */
       struct{
-         int order;
          struct node *relattr;
+         char *optasc;
       } ORDERATTR;
 
       /* agg func + relation attribute node */

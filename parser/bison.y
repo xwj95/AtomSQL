@@ -319,9 +319,9 @@ select_statement
 	;
 
 opt_distinct
-	: DISTINCT { $$ = -1; }
-	| ALL { $$ = 1; }
-	| /* empty */ { $$ = 0; }
+	: DISTINCT { $$ = (char*)"distinct"; }
+	| ALL { $$ = (char*)"all"; }
+	| /* empty */ { $$ = NULL; }
 	;
 
 opt_where_condition
@@ -338,7 +338,7 @@ opt_group_by_clause
 	;
 
 opt_order_by_clause
-	: ORDER BY relattr opt_asc_desc	{ $$ = order_by_node($3, $4); }
+	: ORDER BY relattr opt_asc_desc	{ $$ = order_attr_node($3, $4); }
 	;
 
 opt_asc_desc

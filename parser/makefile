@@ -23,3 +23,7 @@ bison.tab.c: bison.y parser_internal.h
 
 lex.yy.c: flex.l parser_internal.h bison.tab.h
 	$(LEX) flex.l
+
+clean:
+	rm bison.output bison.tab.c bison.tab.h lex.yy.c sql_parser
+ 
