@@ -50,6 +50,7 @@ class Document {
 	//删除文件
 	int deleteFile(string fileName) {
 		string file = directory + fileName + dbtype;
+		bpm->closeFile(files[fileName]);
 		fm->closeFile(files[fileName]);
 		remove(file.c_str());
 		return 0;
@@ -165,6 +166,9 @@ public:
 
 			//判断文件是否是.db格式
 			if (typeName == dbtype) {
+				if (files.count(tableName) > 0) {
+					continue;
+				}
 				int fileID;
 				fm->openFile((directory + file).c_str(), fileID);
 				files[tableName] = fileID;
@@ -250,7 +254,7 @@ public:
 	}
 
 	//插入记录
-	int insertRows(string fileName, Rows &rows) {
+	int insertRows(string fileName, Rows &records) {
 
 		int result = findFile(fileName, true);
 		//文件不存在，或没有指定目录
@@ -260,9 +264,47 @@ public:
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
-		int pageID = 1;
-		return 0;
+		result = tb->insertRecord(fileID, header, records);
+		headers[fileName] = header;
+		return result;
 	}
+
+	//删除记录
+	int deleteRows(string fileName, vector<int> &delta) {
+
+		int result = findFile(fileName, true);
+		//文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
+		//获取元数据
+		Columns header = headers[fileName];
+		int fileID = files[fileName];
+		result = tb->deleteRecord(fileID, header, delta);
+		headers[fileName] = header;
+		return result;
+	}
+
+	//更新记录
+	int updateRows(string fileName, vector<int> &delta, Rows &records) {
+
+		int result = findFile(fileName, true);
+		//文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
+		//待更新行为空，直接返回
+		if (records.rows.size() < 1) {
+			return 0;
+		}
+		//获取元数据
+		Columns header = headers[fileName];
+		int fileID = files[fileName];
+		result = tb->updateRecord(fileID, header, delta, records);
+		headers[fileName] = header;
+		return result;
+	}
+
 };
 
 #endif

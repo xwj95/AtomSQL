@@ -7,11 +7,29 @@
 class Var {
 
 public:
-	virtual uint size();
-	virtual uint type();
-	virtual void print();
-	virtual BufType write(BufType b, IO *io);
-	virtual BufType read(BufType, IO *io);
+	virtual ~Var() {
+
+	}
+
+	virtual uint size() {
+		return 0;
+	}
+
+	virtual uint type() {
+		return TYPE_NONE;
+	}
+
+	virtual void print() {
+
+	}
+
+	virtual BufType write(BufType b, IO *io) {
+		return b;
+	}
+
+	virtual BufType read(BufType b, IO *io) {
+		return b;
+	}
 };
 
 #endif

@@ -19,13 +19,20 @@ public:
 	}
 
 	//写记录
-	BufType write(BufType b, IO *io) {
+	BufType write(BufType b, IO *io, Columns &header) {
 
 		//写入next值
 		b = io->writeUInt(b, next);
 
 		//写入rid值
 		b = io->writeULongint(b, rid);
+
+		if (next == 1) {
+			for (int i = 0; i < (header.size - TABLE_ITEM_NEXT_BYTE - TABLE_ITEM_RID_BYTE) / sizeof(uint); ++i) {
+				b = io->writeUInt(b, 0);
+			}
+			return b;
+		}
 
 		//写入每一列项是否为空
 		uint nulls = 0;
@@ -39,7 +46,7 @@ public:
 
 		//写入每一列项数据
 		for (int i = 0; i < items.size(); ++i) {
-			b = items[i].var.write(b, io);
+			b = items[i].var->write(b, io);
 		}
 		return b;
 	}
@@ -66,17 +73,17 @@ public:
 				if (j >= header.column.size()) {
 					break;
 				}
+				Item item = Item();
+				item.isNull = nulls % (1 << TABLE_ITEM_NULL_BIT);
+				nulls = nulls >> TABLE_ITEM_NULL_BIT;
+				items.push_back(item);
 			}
-			Item item = Item();
-			item.isNull = nulls % (1 << TABLE_ITEM_NULL_BIT);
-			nulls = nulls >> TABLE_ITEM_NULL_BIT;
-			items.push_back(item);
 		}
 
 		//读入每一列项的数据
 		for (int i = 0; i < header.column.size(); ++i) {
-			b = VarFactory::get(b, io, items[i].var, header.column[i].type, header.column[i].length);
-			items[i].var.print();
+			b = VarFactory::get(b, io, &items[i].var, header.column[i].type, header.column[i].length);
+			items[i].var->print();
 			cout << "-";
 		}
 		cout << endl;
@@ -89,6 +96,9 @@ public:
 		//将next槽指向自己，表明该槽已空
 		next = 1;
 		b = io->writeUInt(b, next);
+
+		//rid值不变
+		b = io->writeUInt(b, rid);
 
 		//其余部分用零填充
 		for (int i = 0; i < (header.column.size() - TABLE_ITEM_NEXT_BYTE) / sizeof(uint); ++i) {
@@ -118,7 +128,7 @@ public:
 
 		//写入每一列项数据
 		for (int i = 0; i < items.size(); ++i) {
-			b = items[i].var.write(b, io);
+			b = items[i].var->write(b, io);
 		}
 		return b;
 	}

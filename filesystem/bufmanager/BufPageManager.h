@@ -172,5 +172,14 @@ public:
 			addr[i] = NULL;
 		}
 	}
+	void closeFile(int fileID) {
+		for (int i = 0; i < CAP; ++i) {
+			int f, p;
+			hash->getKeys(i, f, p);
+			if (fileID == f) {
+				writeBack(i);
+			}
+		}
+	}
 };
 #endif

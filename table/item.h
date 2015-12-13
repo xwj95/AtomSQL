@@ -6,7 +6,7 @@
 class Item {
 
 public:
-	Var var;
+	Var *var;
 	bool isNull;
 };
 

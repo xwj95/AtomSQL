@@ -15,6 +15,9 @@ public:
 		length = length_max;
 	}
 
+	~Longint() {
+	}
+
 	uint size() {
 		return TYPE_LONGINT_BYTE;
 	}

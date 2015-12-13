@@ -29,7 +29,7 @@ public:
 
 	uint calSize() {
 		size = TABLE_ITEM_NEXT_BYTE + TABLE_ITEM_RID_BYTE;
-		size += (column.size() * TABLE_ITEM_NULL_BIT + 31) / 32;
+		size += (column.size() * TABLE_ITEM_NULL_BIT + 31) / 32 * 4;
 		for (int i = 0; i < column.size(); ++i) {
 			uint type = column[i].type;
 			if (type == TYPE_LONGINT) {
@@ -38,7 +38,7 @@ public:
 				size += (uint) ((column[i].length + 3) / 4 * 4 * TABLE_ITEM_CHAR_BYTE);
 			}
 		}
-		num = (PAGE_SIZE - TABLE_ITEM_NEXT_BYTE - TABLE_ITEM_EMPTY_BYTE) / size;
+		num = PAGE_SIZE / size;
 		return size;
 	}
 

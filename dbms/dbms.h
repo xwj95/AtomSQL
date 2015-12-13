@@ -98,12 +98,16 @@ public:
 	}
 
 	//删除记录
-	int deleteRows(string tableName, int delta) {
+	int deleteRows(string tableName, vector<int> &delta) {
+		int result = document->deleteRows(tableName, delta);
+		error(result, document->getDirectory(), tableName);
 		return 0;
 	}
 
 	//更新记录
-	int updateRows(string tableName, int delta, Rows &rows) {
+	int updateRows(string tableName, vector<int> &delta, Rows &rows) {
+		int result = document->updateRows(tableName, delta, rows);
+		error(result, document->getDirectory(), tableName);
 		return 0;
 	}
 

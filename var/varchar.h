@@ -15,6 +15,9 @@ public:
 		length = length_max;
 	}
 
+	~Varchar() {
+	}
+
 	uint size() {
 		return TYPE_CHAR_BYTE * length;
 	}
