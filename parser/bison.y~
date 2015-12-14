@@ -455,13 +455,13 @@ mulexp
 	;
 
 oprt_plus
-  : PLUS { $$ = (char*)"+"; }
-  | MINUS { $$ = (char*)"-"; }
+  : PLUS { $$ = "+"; }
+  | MINUS { $$ = "-"; }
   ;
 
 oprt_mul
-  : MULTIPLY { $$ = (char*)"*"; }
-  | DIVIDE { $$ = (char*)"/"; }
+  : MULTIPLY { $$ = "*"; }
+  | DIVIDE { $$ = "/"; }
   ;
 
 primary
