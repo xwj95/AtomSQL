@@ -188,6 +188,10 @@ struct node{
         struct node *relattr;
         struct node *instatement;
       } IN;
+
+      /* quit node */
+      struct{
+      } QUIT;
    } u;
 };
 typedef struct node NODE;

@@ -87,6 +87,7 @@ in 				{ return IN;			}
 except    { return EXCEPT;  }
 intersect { return INTERSECT;}
 union     { return UNION;   }
+quit      { return QUIT;      }
 
 and				{ return AND;			}
 or				{ return OR;			}

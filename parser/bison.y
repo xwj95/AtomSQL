@@ -66,7 +66,7 @@ int bExit;                 // when to return from RBparse
 
 
 /* part2 : 声明在flex中定义的那些TOKEN */
-%token CREATE DROP USE SHOW SELECT DESC INSERT DELETE UPDATE
+%token CREATE DROP USE SHOW SELECT DESC INSERT DELETE UPDATE QUIT
 %token TABLES DATABASE TABLE INDEX 
 %token SET WHERE FROM ORDER GROUP CHECK BY INTO VALUES AS DISTINCT ALL
 %token PRIMARY KEY ASC IN
@@ -93,7 +93,7 @@ int bExit;                 // when to return from RBparse
 %type <sval> opt_asc_desc opt_distinct
 %type <bval> can_null
 %type <n> command
-%type <n> create select insert delete drop update use show desc
+%type <n> create select insert delete drop update use show desc quit
 %type <n> create_database create_table create_index
 %type <n> select_statement
 %type <n> drop_database drop_table drop_index
@@ -162,7 +162,12 @@ command
 	| use
 	| show
 	| desc
+	| quit
 	/*| /* empty */
+	;
+
+quit
+	: QUIT { $$ = quit_node(); }
 	;
 
 use

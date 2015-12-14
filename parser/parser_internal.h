@@ -48,6 +48,7 @@
 #define N_EXPR 25
 #define N_TABLELIST 26
 #define N_IN 27
+#define N_QUIT 28
 
 /*
  * all the available kinds of nodes
@@ -186,6 +187,7 @@ node *expr_node(node *expleft, char *exprop, node *expright);
 node *table_list_node(char *relname, char *alias);
 node *in_node(node *relattr, node *instatement);
 node *prepend(node *n, node *list);
+node *quit_node();
 */
 
 
@@ -279,6 +281,17 @@ node *create_database_node(char *dbname)
     node *n = newnode(N_CREATEDATABASE);
 
     n -> u.CREATEDATABASE.dbname = dbname;
+    return n;
+}
+
+/*
+ * quit_node: allocates, initializes, and returns a pointer to a new
+ * quit node having the indicated values.
+ */
+node *quit_node()
+{
+    node *n = newnode(N_QUIT);
+
     return n;
 }
 
@@ -728,6 +741,12 @@ RC interp(node *n) {
 				/* Make the call to show table */
 				break;
 			}
+
+        case N_QUIT:
+            {
+                /* Make the call to quit */
+                break;
+            }
 
 		default:	// should never get here
 			break;
