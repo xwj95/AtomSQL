@@ -56,9 +56,16 @@ class Document {
 		return 0;
 	}
 
+	void closeAll() {
+		map<string, int>::iterator iter;
+		for (iter = files.begin(); iter != files.end(); ++iter) {
+			fm->closeFile(iter->second);
+		}
+	}
+
 	void clear() {
 		bpm->close();
-		fm->closeAll();
+		closeAll();
 		files.clear();
 		headers.clear();
 		directory = "";
@@ -72,7 +79,6 @@ public:
 		io = new IO();
 		tb = new TableManager(bpm, io);
 		clear();
-		cout << "created!" << endl;
 	}
 
 	~Document() {
@@ -85,7 +91,7 @@ public:
 			delete bpm;
 		}
 		if (fm != NULL) {
-			fm->closeAll();
+			closeAll();
 			delete fm;
 		}
 		if (io != NULL) {

@@ -566,7 +566,6 @@ RC AtomSQLparse()
 	RC rc;
 	bExit = 0;
 	exe_start();
-
 	while (!bExit) {
 		/* Reset parser and scanner for a new query */
     	new_query();
@@ -587,6 +586,7 @@ RC AtomSQLparse()
             		bExit = true;
             	}
         	}
+        	exe_stop();
         }
 	}
 	return rc;

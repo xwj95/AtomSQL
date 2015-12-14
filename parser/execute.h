@@ -15,7 +15,7 @@ void exe_start() {
 void exe_drop_database(const char* db_name) {
 	dbms->dropDatabase(db_name);
 }
-void exe_end() {
+void exe_stop() {
 	if (dbms == NULL) {
 		delete dbms;
 	}
