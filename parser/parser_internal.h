@@ -677,7 +677,7 @@ RC interp(node *n) {
 		case N_CREATEDATABASE:				/* for CreateDatabase() */
 			{
 				/* Make the call to create database */
-                                                                //dbms->createDatabase(n -> u.CREATEDATABASE.dbname);
+                                                    dbms->createDatabase(n -> u.CREATEDATABASE.dbname);
 				break;
 			}
 
@@ -727,7 +727,7 @@ RC interp(node *n) {
 		case N_USEDATABASE:				/* for UseDatabase() */
 			{
 				/* Make the call to use database */
-				break;
+                                                    exe_use_database(n -> u.USEDATABASE.dbname);				break;
 			}
 
 		case N_DESCTABLE:				/* for DescTable() */

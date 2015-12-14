@@ -2025,13 +2025,13 @@ yyreduce:
 
   case 98:
 #line 463 "bison.y" /* yacc.c:1646  */
-    { (yyval.sval) = (char*)'*'; }
+    { (yyval.sval) = (char*)"*"; }
 #line 2030 "bison.tab.c" /* yacc.c:1646  */
     break;
 
   case 99:
 #line 464 "bison.y" /* yacc.c:1646  */
-    { (yyval.sval) = (char*)'/'; }
+    { (yyval.sval) = (char*)"/"; }
 #line 2036 "bison.tab.c" /* yacc.c:1646  */
     break;
 

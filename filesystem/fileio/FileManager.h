@@ -92,7 +92,7 @@ public:
 	int closeFile(int fileID) {
 		fm->setBit(fileID, 1);
 		int f = fd[fileID];
-		close(f);
+		//close(f);
 		return 0;
 	}
 	/*

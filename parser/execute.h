@@ -12,8 +12,14 @@ Dbms *dbms;
 void exe_start() {
 	dbms = new Dbms();
 }
-void exe_drop_database(const char* db_name) {
+void exe_create_database(const char *db_name) {
+	dbms->createDatabase(db_name);
+}
+void exe_drop_database(const char *db_name) {
 	dbms->dropDatabase(db_name);
+}
+void exe_use_database(const char *db_name) {
+	dbms->useDatabase(db_name);
 }
 void exe_stop() {
 	if (dbms == NULL) {
