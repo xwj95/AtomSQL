@@ -745,6 +745,7 @@ RC interp(node *n) {
         case N_QUIT:
             {
                 /* Make the call to quit */
+                errval = -1;
                 break;
             }
 
