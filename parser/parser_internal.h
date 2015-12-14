@@ -16,6 +16,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <cctype>
+#include <algorithm>
 #include "execute.h"
 // #include "bison.tab.h"
 
@@ -553,9 +555,9 @@ node *value_node(char *type, void *value)
     node *n = newnode(N_VALUE);
 
     n->u.VALUE.type = type;
-    if (type == "int")  n->u.VALUE.ival = *(int *)value;
-    else if (type == "float") n->u.VALUE.rval = *(float *)value;
-    else if (type == "string") n->u.VALUE.sval = (char *)value;
+    if (!strcmp(type, "int"))  n->u.VALUE.ival = *(int *)value;
+    else if (!strcmp(type, "float")) n->u.VALUE.rval = *(float *)value;
+    else if (!strcmp(type, "string")) n->u.VALUE.sval = (char *)value;
     else  {}
     return n;
 }
@@ -665,6 +667,30 @@ RC interp(node *n) {
 		case N_CREATETABLE:				/* for CreateTable() */
 			{
 				/* Make the call to create table */
+                                                    Columns header = Columns();
+                                                    node *attrlist = n -> u.CREATETABLE.attrlist;
+                                                    while (attrlist) {
+                                                        Column column = Column();
+                                                        node *n = attrlist -> u.LIST.curr;
+                                                        string type = string(n -> u.ATTRTYPE.type);
+                                                        if (type == "int") {
+                                                            column.type = TYPE_LONGINT;
+                                                        }
+                                                        else if (type == "varchar") {
+                                                            column.type = TYPE_VARCHAR;
+                                                        }
+                                                        else {
+                                                            column.type = TYPE_NONE;
+                                                        }
+                                                        column.length = n -> u.ATTRTYPE.length;
+                                                        column.canNull = n -> u.ATTRTYPE.canNull;
+                                                        column.name = n -> u.ATTRTYPE.attrname;
+                                                        header.column.push_back(column);
+                                                        attrlist = attrlist -> u.LIST.next;
+                                                    }
+                                                    node *keydeclist = n -> u.CREATETABLE.keydeclist;
+                                                    header.calSize();
+                                                    exe_create_table(n -> u.CREATETABLE.relname, header);
 				break;
 			}
 
@@ -677,7 +703,7 @@ RC interp(node *n) {
 		case N_CREATEDATABASE:				/* for CreateDatabase() */
 			{
 				/* Make the call to create database */
-                                                    dbms->createDatabase(n -> u.CREATEDATABASE.dbname);
+                                                    exe_create_database(n -> u.CREATEDATABASE.dbname);
 				break;
 			}
 
@@ -696,7 +722,8 @@ RC interp(node *n) {
 		case N_DROPDATABASE:				/* for DropDatabase() */
 			{
 				/* Make the call to drop database */
-                                                    exe_drop_database(n -> u.DROPDATABASE.dbname);
+                                                     
+                                                     exe_drop_database(n -> u.DROPDATABASE.dbname);
 				break;
 			}
 
@@ -727,7 +754,8 @@ RC interp(node *n) {
 		case N_USEDATABASE:				/* for UseDatabase() */
 			{
 				/* Make the call to use database */
-                                                    exe_use_database(n -> u.USEDATABASE.dbname);				break;
+                                                    exe_use_database(n -> u.USEDATABASE.dbname);
+				break;
 			}
 
 		case N_DESCTABLE:				/* for DescTable() */
@@ -739,15 +767,16 @@ RC interp(node *n) {
 		case N_SHOWTABLE:				/* for ShowTable() */
 			{
 				/* Make the call to show table */
+                                                    exe_show_table();
 				break;
 			}
 
-        case N_QUIT:
-            {
-                /* Make the call to quit */
-                errval = -1;
-                break;
-            }
+                            case N_QUIT:
+                                {
+                                    /* Make the call to quit */
+                                    errval = -1;
+                                    break;
+                                }
 
 		default:	// should never get here
 			break;

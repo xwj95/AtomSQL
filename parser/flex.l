@@ -130,14 +130,14 @@ varchar   { return VARCHAR; }
                       return FLOAT_LITERAL;}
 {s_num}\.{num}[Ee]{s_num}   {sscanf(yytext, "%f", &yylval.rval);
                              return FLOAT_LITERAL;}
-\"([^\"\n]|(\"\"))*\"       {yylval.sval = strndup(yytext+1, strlen(yytext) - 2); return STRING_LITERAL;}
-\"([^\"\n]|(\"\"))*\n       {printf("newline in string constant\n");}
+((\"[^\"]*\")|(\'[^\']*\'))      {yylval.sval = strndup(yytext+1, strlen(yytext) - 2);
+                            return STRING_LITERAL;}
 {letter}({letter}|{digit}|_)*   {yylval.sval = strdup(yytext);
 								 return IDENTIFIER;}
 !                    {BEGIN(shell_cmd);}
 <shell_cmd>[^\n]*    {yylval.sval = yytext; return T_SHELL_CMD;}
 <shell_cmd>\n        {BEGIN(INITIAL);}
-[*/+\-=<>':;,.|&()]  {return yytext[0];}
+[*/+\-=<>:;,.|&()]  {return yytext[0];}
 <<EOF>>              {return T_EOF;}
 .                    {printf("illegal character [%c]\n", yytext[0]);}
 

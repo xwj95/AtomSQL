@@ -21,6 +21,12 @@ void exe_drop_database(const char *db_name) {
 void exe_use_database(const char *db_name) {
 	dbms->useDatabase(db_name);
 }
+void exe_create_table(const char *db_name, Columns &header) {
+	dbms->createTable(db_name, header);
+}
+void exe_show_table() {
+	dbms->showTables();
+}
 void exe_stop() {
 	if (dbms == NULL) {
 		delete dbms;
