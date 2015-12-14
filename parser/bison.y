@@ -88,7 +88,7 @@ int bExit;                 // when to return from RBparse
 %type <combo> select_combo bool_op
 %type <oprt> oprt
 */
-%type <sval> comp_op function_name column_type select_combo bool_op oprt
+%type <sval> comp_op function_name column_type select_combo bool_op oprt_plus oprt_mul
 %type <sval> opt_alias database_name table_name column_name
 %type <sval> opt_asc_desc opt_distinct
 %type <bval> can_null
@@ -247,7 +247,7 @@ create_table
 
 column_dec_list
 	: column_dec { $$ = list_node($1); }
-	| column_dec ',' column_dec_list { $$ = prepend($1, $3); }
+	| column_dec_list ',' column_dec { $$ = prepend($3, $1); }
 	;
 
 column_dec
@@ -277,7 +277,7 @@ opt_key_dec_list
 
 key_dec_list
 	: key_dec { $$ = $1; }
-	| key_dec ',' key_dec_list { $$ = prepend($1, $3); }
+	| key_dec_list ',' key_dec { $$ = prepend($3, $1); }
 	;
 
 key_dec
@@ -314,11 +314,11 @@ select_combo
 select_statement
 	: SELECT opt_distinct expression_list FROM table opt_where_condition opt_order_by_clause opt_group_by_clause
 		{
-			$$ = query_node($2, $3, $5, $6, $7);
+			$$ = query_node($2, $3, $5, $6, $7, $8);
 		}
 	| SELECT opt_distinct expression_list FROM table opt_where_condition opt_group_by_clause opt_order_by_clause
 		{
-			$$ = query_node($2, $3, $5, $7, $6);
+			$$ = query_node($2, $3, $5, $6, $8, $7);
 		}
 	| '(' select_statement ')' { $$ = $2; }
 	;
@@ -430,7 +430,7 @@ comp_op
 */
 expression_list
 	: expression { $$ = list_node($1); }
-	| expression_list ',' expression { $$ = prepend($1, $3); }
+	| expression_list ',' expression { $$ = prepend($3, $1); }
 	| '*'
 		{
 			$$ = list_node(aggrelattr_node(NULL, NULL, (char*)"*"));
@@ -445,26 +445,28 @@ expression
 	;
 
 expr_plus
-	: expr_plus oprt mulexp { $$ = expr_node($1, $2, $3); }
+	: expr_plus oprt_plus mulexp { $$ = expr_node($1, $2, $3); }
 	| mulexp { $$ = $1; }
 	;
 
 mulexp
-	: mulexp oprt primary 	{ $$ = expr_node($1, $2, $3); }
+	: mulexp oprt_mul primary 	{ $$ = expr_node($1, $2, $3); }
 	| primary 		{ $$ = $1; }
 	;
 
-oprt
-  : PLUS { $$ = (char*)"+"); }
+oprt_plus
+  : PLUS { $$ = (char*)"+"; }
   | MINUS { $$ = (char*)"-"; }
-  | MULTIPLY { $$ = (char*)"*"; }
-  | DIVIDE { $$ = (char*)"/"; }
-  | CONCAT { $$ = (char*)"||"; }
+  ;
+
+oprt_mul
+  : MULTIPLY { $$ = (char*)'*'; }
+  | DIVIDE { $$ = (char*)'/'; }
   ;
 
 primary
 	: '(' expr_plus ')' 	{ $$ = $2; }
-	| MINUS primary 		{ $$ = expe_node(NULL, (char*)"-", $2); }
+	| MINUS primary 		{ $$ = expr_node(NULL, (char*)"-", $2); }
 	| term 			{ $$ = $1; } 
 	;
 
@@ -520,7 +522,8 @@ table_name
 	;
 
 table
-	: table_ref ',' table { $$ = prepend($1, $3); }
+	: table_ref
+	| table ',' table_ref { $$ = prepend($3, $1); }
 	;
 
 table_ref
@@ -536,9 +539,9 @@ insert
 
 values_list
 	: literal_value { $$ = list_node($1); }
-	| literal_value ',' values_list
+	| values_list ',' literal_value
 		{ 
-			$$ = prepend($1, $3); 
+			$$ = prepend($3, $1); 
 		}
 	;
 
