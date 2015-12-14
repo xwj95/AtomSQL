@@ -597,7 +597,6 @@ node *attrtype_node(char *attrname, char *type, int length, bool canNull)
 node *relation_node(char *relname)
 {
     node *n = newnode(N_RELATION);
-
     n->u.RELATION.relname = relname;
     return n;
 }
@@ -671,8 +670,8 @@ RC interp(node *n) {
                                                     node *attrlist = n -> u.CREATETABLE.attrlist;
                                                     while (attrlist) {
                                                         Column column = Column();
-                                                        node *n = attrlist -> u.LIST.curr;
-                                                        string type = string(n -> u.ATTRTYPE.type);
+                                                        node *attr = attrlist -> u.LIST.curr;
+                                                        string type = string(attr -> u.ATTRTYPE.type);
                                                         if (type == "int") {
                                                             column.type = TYPE_LONGINT;
                                                         }
@@ -682,13 +681,32 @@ RC interp(node *n) {
                                                         else {
                                                             column.type = TYPE_NONE;
                                                         }
-                                                        column.length = n -> u.ATTRTYPE.length;
-                                                        column.canNull = n -> u.ATTRTYPE.canNull;
-                                                        column.name = n -> u.ATTRTYPE.attrname;
-                                                        header.column.push_back(column);
+                                                        column.length = attr -> u.ATTRTYPE.length;
+                                                        column.canNull = attr -> u.ATTRTYPE.canNull;
+                                                        column.name = attr -> u.ATTRTYPE.attrname;
+                                                        header.column.insert(header.column.begin(), column);
                                                         attrlist = attrlist -> u.LIST.next;
                                                     }
+                                                    header.major = header.column.size();
                                                     node *keydeclist = n -> u.CREATETABLE.keydeclist;
+                                                    while (keydeclist) {
+                                                        node *keydec = keydeclist -> u.LIST.curr;
+                                                        string type = string(keydec -> u.RELATION.relname);
+                                                        if (header.major < header.column.size()) {
+                                                            cout << "Only one major column is permitted." << endl;
+                                                            return 0;
+                                                        }
+                                                        for (int index = 0; index < header.column.size(); ++index) {
+                                                            if (type == header.column[index].name) {
+                                                                header.major = index;
+                                                            }
+                                                        }
+                                                        if (header.major >= header.column.size()) {
+                                                            cout << "Undefined major column \"" << type << "\"." << endl;
+                                                            return 0;
+                                                        }
+                                                        keydeclist = keydeclist -> u.LIST.next;
+                                                    }
                                                     header.calSize();
                                                     exe_create_table(n -> u.CREATETABLE.relname, header);
 				break;
@@ -716,6 +734,7 @@ RC interp(node *n) {
 		case N_DROPTABLE:				/* for DropTable() */
 			{
 				/* Make the call to drop table */
+                                                    exe_drop_table(n -> u.DROPTABLE.relname);
 				break;
 			}
 
@@ -761,6 +780,7 @@ RC interp(node *n) {
 		case N_DESCTABLE:				/* for DescTable() */
 			{
 				/* Make the call to desc table */
+                                                    exe_desc_table(n -> u.DESCTABLE.relname);
 				break;
 			}
 

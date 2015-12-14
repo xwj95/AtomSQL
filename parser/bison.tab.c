@@ -1677,7 +1677,7 @@ yyreduce:
 
   case 45:
 #line 279 "bison.y" /* yacc.c:1646  */
-    { (yyval.n) = (yyvsp[0].n); }
+    { (yyval.n) = list_node((yyvsp[0].n)); }
 #line 1682 "bison.tab.c" /* yacc.c:1646  */
     break;
 
@@ -2483,9 +2483,9 @@ RC AtomSQLparse()
             		bExit = true;
             	}
         	}
-        	exe_stop();
         }
 	}
+        	exe_stop();
 	return rc;
 }
 

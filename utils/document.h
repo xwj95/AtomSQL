@@ -179,6 +179,7 @@ public:
 				int fileID;
 				fm->openFile((directory + file).c_str(), fileID);
 				files[tableName] = fileID;
+				cout << "Read " << tableName << endl;
 				headers[tableName] = tb->readHeader(fileID, 0);
 			}
 		}
@@ -256,7 +257,29 @@ public:
 		}
 		//直接从缓存中获取元数据
 		Columns header = headers[fileName];
-		cout << header.schema << endl;
+		cout << "create table " << fileName << "(";
+		for (int i = 0; i < header.column.size(); ++i) {
+			cout << header.column[i].name << " ";
+			if (header.column[i].type == TYPE_LONGINT) {
+				cout << "int";
+			}
+			else if (header.column[i].type == TYPE_VARCHAR) {
+				cout << "varchar";
+			}
+			if (header.column[i].length > 0) {
+				cout << "(" << header.column[i].length << ")";
+			}
+			if (!header.column[i].canNull) {
+				cout << " not null";
+			}
+			if (i < header.column.size() - 1) {
+				cout << ", ";
+			}
+		}
+		if (header.major < header.column.size()) {
+			cout << ", primary key(" << header.column[header.major].name << ")" ;
+		}
+		cout << ")" << endl;
 		return 0;
 	}
 

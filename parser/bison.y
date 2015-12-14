@@ -276,7 +276,7 @@ opt_key_dec_list
 	;
 
 key_dec_list
-	: key_dec { $$ = $1; }
+	: key_dec { $$ = list_node($1); }
 	| key_dec_list ',' key_dec { $$ = prepend($3, $1); }
 	;
 
@@ -594,9 +594,9 @@ RC AtomSQLparse()
             		bExit = true;
             	}
         	}
-        	exe_stop();
         }
 	}
+        	exe_stop();
 	return rc;
 }
 
