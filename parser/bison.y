@@ -602,13 +602,43 @@ RC AtomSQLparse()
 
 int main(int argc, char const *argv[])
 {
-	// RC rc;
-	// rc = openDB("dbname");
-	// error(rc);
+	if (argc == 1) {
+		AtomSQLparse();
+	}
+	else if (argc == 2) {
+		FILE *inputFile;
+		inputFile = fopen(argv[1], "r");
+		if(!inputFile) {
+			fprintf(stderr, "unable to open %s\n", argv[1]);
+			return -1;
+		}
+		extern FILE* yyin;
+		yyin = inputFile;
+		RC rc;
+		bExit = 0;
+		exe_start();
+		while (!bExit) {
+			/* Reset parser and scanner for a new query */
+	    	new_query();
 
-	AtomSQLparse();
-
-	// closeDB();
+	    	/* If a query was successfully read, interpret it */
+	    	if(yyparse() == 0 && parse_tree != NULL) {
+	    		if ((rc = interp(parse_tree))) {
+	    		// if ((rc = interp(outputFilePtr, parse_tree))) {
+	        		// PrintError(rc);
+	            	if (rc < 0) {
+	            		bExit = true;
+	            	}
+	        	}
+	        }
+		}
+	  exe_stop();
+		fclose(inputFile);
+		return rc;
+	}
+	else {
+		cout << "\nUsage: ./sql_parser\n" << "     | ./sql_parser filename\n\n";
+	}
 
 	return 0;
 }
