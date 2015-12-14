@@ -34,6 +34,7 @@ public:
 	Dbms() {
 		MyBitMap::initConst();
 		document = new Document();
+		cout << "dbms created!" << endl;
 	}
 	~Dbms() {
 		if (document != NULL) {

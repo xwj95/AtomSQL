@@ -75,7 +75,7 @@ int bExit;                 // when to return from RBparse
 %token MAX MIN SUM AVG COUNT
 %token EQU NEQ LSS GTR LEQ GEQ CONCAT IS LIKE T_EOF
 %token PLUS MINUS MULTIPLY DIVIDE
-%token INT CHAR FLOAT VARCHAR
+%token INTEGER CHAR FLOAT VARCHAR
 %token <ival> INT_LITERAL
 %token <rval> FLOAT_LITERAL
 %token <sval> STRING_LITERAL IDENTIFIER T_SHELL_CMD
@@ -259,7 +259,7 @@ can_null
 	;
 
 column_type
-	: INT 			{ $$ = (char*)"int"; }
+	: INTEGER 		{ $$ = (char*)"int"; }
 	| FLOAT 		{ $$ = (char*)"float"; }
 	| CHAR 			{ $$ = (char*)"char"; }
 	| VARCHAR 		{ $$ = (char*)"varchar"; }
@@ -561,11 +561,11 @@ delete
 
 /* the output of the parser goes to the output file */
 // extern FILE * outputFilePtr; 
-
 RC AtomSQLparse()
 {
 	RC rc;
 	bExit = 0;
+	exe_start();
 
 	while (!bExit) {
 		/* Reset parser and scanner for a new query */
@@ -576,6 +576,7 @@ RC AtomSQLparse()
 
     	/* Get the prompt to actually show up on the screen */
     	cout.flush(); 
+
 //#endif
     	/* If a query was successfully read, interpret it */
     	if(yyparse() == 0 && parse_tree != NULL) {

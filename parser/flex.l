@@ -113,7 +113,7 @@ count			{ return COUNT;			}
 like			{ return LIKE;			}
 is 				{ return IS;			}
 
-int       { return INT;     }
+int       { return INTEGER;     }
 char      { return CHAR;    }
 float     { return FLOAT;   }
 varchar   { return VARCHAR; }

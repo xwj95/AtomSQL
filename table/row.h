@@ -57,13 +57,13 @@ public:
 		//读入next值
 		b = io->readUInt(b, next);
 
-		//当前槽为空槽
-		if (next == 1) {
-			return b + (header.size - TABLE_ITEM_NEXT_BYTE) / sizeof(uint);
-		}
-
 		//读入rid值
 		b = io->readULongint(b, rid);
+
+		//当前槽为空槽
+		if (next == 1) {
+			return b + (header.size - TABLE_ITEM_NEXT_BYTE - TABLE_ITEM_RID_BYTE) / sizeof(uint);
+		}
 
 		//读入每一列项是否为空
 		for (int i = 0; i < (header.column.size() + 31) / 32; ++i) {
@@ -83,10 +83,7 @@ public:
 		//读入每一列项的数据
 		for (int i = 0; i < header.column.size(); ++i) {
 			b = VarFactory::get(b, io, &items[i].var, header.column[i].type, header.column[i].length);
-			items[i].var->print();
-			cout << "-";
 		}
-		cout << endl;
 		return b;
 	}
 

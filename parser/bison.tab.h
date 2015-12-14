@@ -100,7 +100,7 @@ extern int yydebug;
     MINUS = 310,
     MULTIPLY = 311,
     DIVIDE = 312,
-    INT = 313,
+    INTEGER = 313,
     CHAR = 314,
     FLOAT = 315,
     VARCHAR = 316,

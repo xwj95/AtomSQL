@@ -196,7 +196,7 @@ extern int yydebug;
     MINUS = 310,
     MULTIPLY = 311,
     DIVIDE = 312,
-    INT = 313,
+    INTEGER = 313,
     CHAR = 314,
     FLOAT = 315,
     VARCHAR = 316,
@@ -564,7 +564,7 @@ static const char *const yytname[] =
   "IN", "AND", "OR", "EXCEPT", "INTERSECT", "UNION", "NOT", "TOKEN_NULL",
   "MAX", "MIN", "SUM", "AVG", "COUNT", "EQU", "NEQ", "LSS", "GTR", "LEQ",
   "GEQ", "CONCAT", "IS", "LIKE", "T_EOF", "PLUS", "MINUS", "MULTIPLY",
-  "DIVIDE", "INT", "CHAR", "FLOAT", "VARCHAR", "INT_LITERAL",
+  "DIVIDE", "INTEGER", "CHAR", "FLOAT", "VARCHAR", "INT_LITERAL",
   "FLOAT_LITERAL", "STRING_LITERAL", "IDENTIFIER", "T_SHELL_CMD", "CONTAC",
   "';'", "'('", "')'", "','", "'.'", "'*'", "$accept", "start", "command",
   "use", "desc", "show", "update", "drop", "create", "create_database",
@@ -2074,11 +2074,11 @@ yyreturn:
 
 /* the output of the parser goes to the output file */
 // extern FILE * outputFilePtr; 
-
 RC AtomSQLparse()
 {
 	RC rc;
 	bExit = 0;
+	exe_start();
 
 	while (!bExit) {
 		/* Reset parser and scanner for a new query */
@@ -2089,6 +2089,7 @@ RC AtomSQLparse()
 
     	/* Get the prompt to actually show up on the screen */
     	cout.flush(); 
+
 //#endif
     	/* If a query was successfully read, interpret it */
     	if(yyparse() == 0 && parse_tree != NULL) {

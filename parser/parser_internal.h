@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include "execute.h"
 // #include "bison.tab.h"
 
 
@@ -663,6 +664,7 @@ RC interp(node *n) {
 		case N_CREATEDATABASE:				/* for CreateDatabase() */
 			{
 				/* Make the call to create database */
+                                                                //dbms->createDatabase(n -> u.CREATEDATABASE.dbname);
 				break;
 			}
 
@@ -681,6 +683,7 @@ RC interp(node *n) {
 		case N_DROPDATABASE:				/* for DropDatabase() */
 			{
 				/* Make the call to drop database */
+                                                    exe_drop_database(n -> u.DROPDATABASE.dbname);
 				break;
 			}
 

@@ -2,6 +2,8 @@
 #define DBMS_IO_H_
 
 #include "../filesystem/filesystem.h"
+#include <stdlib.h>
+#include <string.h>
 
 class IO {
 public:

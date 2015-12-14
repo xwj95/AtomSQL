@@ -1182,7 +1182,7 @@ YY_RULE_SETUP
 case 56:
 YY_RULE_SETUP
 #line 116 "flex.l"
-{ return INT;     }
+{ return INTEGER;     }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP

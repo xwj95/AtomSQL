@@ -4,14 +4,14 @@
 
 BUILD_DIR = build
 TARGET = -o sql
-OBJS = dbms.o
+CPPS = dbms.cpp
 
 CXX = g++ -std=c++11
 
-all : $(OBJS)
-	$(CXX) $(TARGET) $(OBJS)
+all : $(HEADERS)
+	$(CXX) $(TARGET) $(CPPS)
 
-$(OBJS) : dbms/*.h filesystem/*.h table/*.h utils/*.h
+$(HEADERS) : dbms/*.h filesystem/*.h table/*.h utils/*.h
 
 clean :
-	rm $(TARGET) $(OBJS)
+	rm $(TARGET)

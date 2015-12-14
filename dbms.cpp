@@ -61,7 +61,7 @@ Rows sampleRecords() {
 	records.rows.push_back(record);
 
 	record.items.clear();
-	record.items.push_back(sampleInt(429467299));
+	record.items.push_back(sampleInt(4294967299));
 	record.items.push_back(sampleString("I'm so happy"));
 	records.rows.push_back(record);
 
@@ -83,6 +83,7 @@ Rows sampleUpdate() {
 	record.items.clear();
 	record.items.push_back(sampleInt(272));
 	record.items.push_back(sampleString("Curry!!!Curry!!!"));
+	records.rows.push_back(record);
 	return records;
 }
 
@@ -122,7 +123,9 @@ void test1() {
 
 void test2() {
 	dbms->insertRows("table1", records);
-	dbms->updateRows("table1", update_index, records);
+	dbms->deleteRows("table1", update_index);
+	dbms->insertRows("table1", records);
+	dbms->updateRows("table1", update_index, update);
 }
 
 int main() {

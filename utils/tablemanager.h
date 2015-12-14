@@ -94,9 +94,6 @@ public:
 			}
 			page.write(bpm, io, fileID, pageID, header);
 		}
-		// int index;
-		// BufType b = bpm->getPage(fileID, pageID, index);
-		// io->print(b);
 		return 0;
 	}
 
@@ -132,9 +129,6 @@ public:
 			page.write(bpm, io, fileID, pageID, header);
 			record++;
 		}
-		int index;
-		BufType b = bpm->getPage(fileID, pageID, index);
-		io->print(b);
 		return 0;
 	}
 
@@ -152,7 +146,6 @@ public:
 			//获取当前页的记录
 			Rows page;
 			page.read(bpm, io, fileID, pageID, header);
-			cout << "Read successfully!" << endl;
 			int upd = delta[record] % header.num;
 			//待更新记录为空
 			if (page.rows[upd].next == 1) {
@@ -166,9 +159,6 @@ public:
 			page.write(bpm, io, fileID, pageID, header);
 			record++;
 		}
-		int index;
-		BufType b = bpm->getPage(fileID, pageID, index);
-		io->print(b);
 		return 0;
 	}
 };

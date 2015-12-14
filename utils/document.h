@@ -72,6 +72,7 @@ public:
 		io = new IO();
 		tb = new TableManager(bpm, io);
 		clear();
+		cout << "created!" << endl;
 	}
 
 	~Document() {
