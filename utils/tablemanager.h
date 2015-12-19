@@ -44,7 +44,7 @@ public:
 		BufType b = bpm->getPage(fileID, pageID, index);\
 		bpm->access(index);
 		Columns header;
-		cout << "Page = " << index << endl;
+		///////////////////////////cout << "Page = " << index << endl;
 		b = header.readColumns(b, io);
 		return header;
 	}

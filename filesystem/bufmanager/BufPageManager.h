@@ -166,7 +166,7 @@ public:
 		dirty = new bool[CAP];
 		addr = new BufType[CAP];
 		hash = new MyHashMap(c, m);
-	    replace = new FindReplace(c);
+		replace = new FindReplace(c);
 		for (int i = 0; i < CAP; ++ i) {
 			dirty[i] = false;
 			addr[i] = NULL;

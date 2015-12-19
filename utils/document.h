@@ -177,9 +177,9 @@ public:
 					continue;
 				}
 				int fileID;
-				fm->openFile((directory + file).c_str(), fileID);
+				fm->openFile((this->directory + file).c_str(), fileID);
 				files[tableName] = fileID;
-				cout << "Read " << tableName << endl;
+				//////////cout << "Read " << tableName << endl;
 				headers[tableName] = tb->readHeader(fileID, 0);
 			}
 		}

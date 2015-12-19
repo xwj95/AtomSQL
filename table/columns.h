@@ -62,7 +62,8 @@ public:
 		b = io->readString(b, schema, TABLE_HEADER_SCHEMA_BIT);
 		b = io->readUInt(b, major);
 		b = io->readUInt(b, pages);
-
+		////////////////////cout << schema << endl;
+		////////////////////cout << major << " " << pages << endl;
 		//依次读取每一个列项
 		while (true) {
 			Column column_read;
