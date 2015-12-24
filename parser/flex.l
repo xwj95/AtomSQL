@@ -185,7 +185,7 @@ VARCHAR   { return VARCHAR; }
 !                    {BEGIN(shell_cmd);}
 <shell_cmd>[^\n]*    {yylval.sval = yytext; return T_SHELL_CMD;}
 <shell_cmd>\n        {BEGIN(INITIAL);}
-[*/+\-=<>:;,.|&()]  {return yytext[0];}
+[*/+\-=<>:;,.|&()\[\]]  {return yytext[0];}
 <<EOF>>              {return T_EOF;}
 .                    {printf("illegal character [%c]\n", yytext[0]);}
 

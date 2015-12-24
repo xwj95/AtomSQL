@@ -25,6 +25,10 @@ public:
 		return TYPE_VARCHAR;
 	}
 
+	bool isNull() {
+		return false;
+	}
+
 	void print() {
 		cout << value;
 	}

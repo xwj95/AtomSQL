@@ -663,6 +663,9 @@ Var* getVar(node *n) {
     else if (type == "string") {
         var = VarFactory::get(n -> u.VALUE.sval, 0);
     }
+    else if (type == "null") {
+        var = VarFactory::get(0);
+    }
     else {
         var = NULL;
     }
@@ -704,6 +707,9 @@ Expression *getExpression(node *n) {
         if (expleft->kind == N_AGGRELATTR) {
             expression->term_left = getTerm(expleft);
         }
+        if (expleft->kind == N_VALUE) {
+            expression->value_left = getVar(expleft);
+        }
     }
     if (expright != NULL) {
         if (expright->kind == N_EXPR) {
@@ -711,6 +717,9 @@ Expression *getExpression(node *n) {
         }
         if (expright->kind == N_AGGRELATTR) {
             expression->term_right = getTerm(expright);
+        }
+        if (expright->kind == N_VALUE) {
+            expression->value_right = getVar(expright);
         }
     }
     return expression;
@@ -919,6 +928,13 @@ RC interp(node *n) {
 		case N_UPDATE:				/* for Update() */
 			{
 				/* Make the call to update */
+                                                    Condition *condition = getCondition(n->u.UPDATE.conditionlist);
+                                                    Expression *expression = getExpression(n->u.UPDATE.relorvalue);
+                                                    Update update;
+                                                    update.expression = *expression;
+                                                    node *relattr = n->u.UPDATE.relattr;
+                                                    update.column_name = relattr->u.RELATTR.attrname;
+                                                    exe_update(n->u.UPDATE.relname, update, *condition);
 				break;
 			}
 

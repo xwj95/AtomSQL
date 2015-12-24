@@ -42,6 +42,9 @@ int exe_delete(const char *db_name, Condition &condition) {
 int exe_select(vector<string> db_names, Expressions &expressions, Condition &condition) {
 	return dbms->selectRows(db_names, expressions, condition);
 }
+int exe_update(const char *db_name, Update &update, Condition &condition) {
+	return dbms->updateRows(db_name, update, condition);
+}
 void exe_stop() {
 	if (dbms != NULL) {
 		delete dbms;

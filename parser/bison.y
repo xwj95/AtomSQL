@@ -190,7 +190,7 @@ show
 	;
 
 update
-	: UPDATE IDENTIFIER SET relattr EQU relattr_or_value opt_where_condition
+	: UPDATE IDENTIFIER SET relattr EQU expr_plus opt_where_condition
 		{
 			$$ = update_node($2, $4, $6, $7);
 		}
@@ -357,7 +357,7 @@ condition
 		}
 	| bool_term bool_op condition 
 		{ 
-			$$ = condition_list_node($1, $2, $3); 
+			$$ = condition_list_node($1, $2, $3);
 		}
 	;
 
@@ -365,6 +365,10 @@ bool_term
 	: relattr comp_op relattr_or_value
 		{
 			$$ = condition_node($1, $2, $3);
+		}
+	| relattr comp_op TOKEN_NULL
+		{
+			$$ = condition_node($1, $2, relattr_or_value_node(NULL, NULL));
 		}
 	| relattr in_statement
 		{
@@ -429,9 +433,9 @@ comp_op
 expression_list
 	: expression { $$ = list_node($1); }
 	| expression_list ',' expression { $$ = prepend($3, $1); }
-	| '*'
+	| MULTIPLY
 		{
-			$$ = list_node(aggrelattr_node(NULL, NULL, (char*)"*"));
+			$$ = NULL;
 		}
 	;
 
@@ -466,6 +470,7 @@ primary
 	: '(' expr_plus ')' 	{ $$ = $2; }
 	| MINUS primary 		{ $$ = expr_node(NULL, (char*)"-", $2); }
 	| term 			{ $$ = $1; } 
+	| literal_value		{ $$ = $1; }
 	;
 
 /*
@@ -491,7 +496,7 @@ term
 		{
 			$$ = aggrelattr_node($1, $3, $5);
 		}
-	| function_name '(' '*' ')'
+	| function_name '(' MULTIPLY ')'
 		{
 			$$ = aggrelattr_node($1, NULL, (char*)"*");
 		}
@@ -552,6 +557,12 @@ values_list
 		{ 
 			$$ = prepend($3, $1); 
 		}
+	| TOKEN_NULL {
+		$$ = list_node(value_node((char*)"null", NULL));
+	}
+	| values_list ',' TOKEN_NULL {
+		$$ = prepend(value_node((char*)"null", NULL), $1);
+	}
 	;
 
 literal_value

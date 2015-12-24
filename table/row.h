@@ -82,7 +82,12 @@ public:
 
 		//读入每一列项的数据
 		for (int i = 0; i < header.column.size(); ++i) {
-			b = VarFactory::get(b, io, &items[i].var, header.column[i].type, header.column[i].length);
+			if (!items[i].isNull) {
+				b = VarFactory::get(b, io, &items[i].var, header.column[i].type, header.column[i].length);
+			}
+			else {
+				b = VarFactory::get(b, io, &items[i].var, TYPE_NULL, header.column[i].length, header.column[i].type);
+			}
 		}
 		return b;
 	}

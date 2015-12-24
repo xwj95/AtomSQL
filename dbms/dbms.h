@@ -8,6 +8,7 @@
 #include "../utils/io.h"
 #include "../condition/condition.h"
 #include "../expression/expressions.h"
+#include "../expression/update.h"
 
 class Dbms {
 
@@ -28,6 +29,12 @@ class Dbms {
 		}
 		if (type == -4) {
 			cout << tableName + dbtype << " already exists." << endl;
+		}
+		if ((type < -5) && (type > -30)) {
+			cout << "Error." << endl;
+		}
+		if (type == -30) {
+			cout << "Update error." << endl;
 		}
 	}
 
@@ -107,8 +114,8 @@ public:
 	}
 
 	//更新记录
-	int updateRows(string tableName, Condition &condition) {
-		int result = document->updateRows(tableName, condition);
+	int updateRows(string tableName, Update &update, Condition &condition) {
+		int result = document->updateRows(tableName, update, condition);
 		error(result, document->getDirectory(), tableName);
 		return 0;
 	}

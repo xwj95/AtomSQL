@@ -20,7 +20,6 @@ public:
 		header.writeColumns(b, io);
 		//申请新的页面
 		b = bpm->allocPage(fileID, pageID, index, true);
-		cout << "FileID = " << fileID << " PageID = " << pageID << " Index = " << index << endl;
 		bpm->markDirty(index);
 		counts = header.num;
 		b = io->writeUInt(b, counts);

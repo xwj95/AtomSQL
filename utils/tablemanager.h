@@ -6,6 +6,7 @@
 #include "../table/columns.h"
 #include "../condition/condition.h"
 #include "../expression/expressions.h"
+#include "../expression/update.h"
 
 class TableManager {
 
@@ -69,8 +70,10 @@ public:
 				pageID++;
 				continue;
 			}
+			page.print(bpm, io ,fileID, pageID);
 			//寻找空槽
 			for (int i = 0; i < header.num; ++i) {
+				cout << pageID << " " << i << " " << page.rows[i].next << endl;
 				if (page.rows[i].next != 1) {
 					continue;
 				}
@@ -137,7 +140,7 @@ public:
 	}
 
 	//更新记录
-	int updateRecord(int fileID, Columns &header, vector<int> &delta, Rows &records) {
+	int updateRecord(int fileID, Columns &header, vector<int> &delta, Update &update) {
 		int pageID = 1;
 		int record = 0;
 		while ((record < delta.size()) && (pageID <= header.pages)) {
@@ -157,9 +160,7 @@ public:
 				continue;
 			}
 			//更新记录
-			records.rows[record].next = page.rows[upd].next;
-			records.rows[record].rid = page.rows[upd].rid;
-			page.rows[upd] = records.rows[record];
+			update.cal(page.rows[upd]);
 			page.write(bpm, io, fileID, pageID, header);
 			record++;
 		}

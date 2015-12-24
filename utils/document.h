@@ -7,6 +7,7 @@
 #include "../table/rows.h"
 #include "../condition/condition.h"
 #include "../expression/expressions.h"
+#include "../expression/update.h"
 #include <map>
 
 class Document {
@@ -298,13 +299,21 @@ public:
 		for (int i = 0; i < records.rows.size(); ++i) {
 			if (header.column.size() != records.rows[i].items.size()) {
 				cout << header.column.size() << '&' << records.rows[i].items.size() << endl;
-				cout << "Numbers of columns of record " << i << " does not match." << endl;
+				cout << "Numbers of columns of record " << i + 1 << " does not match." << endl;
 				return -5;
 			}
 			for (int j = 0; j < header.column.size(); ++j) {
 				if (header.column[j].type != records.rows[i].items[j].var->type()) {
-					cout << "Type of column " << j << " of record " << i << " does not match." << endl;
-					return -6;
+					if (records.rows[i].items[j].var->type() != TYPE_NULL) {
+						cout << "Type of column " << j + 1 << " of record " << i + 1 << " does not match." << endl;
+						return -6;
+					}
+					/*if (!header.column[j].canNull) {
+						cout << "Column " << j + 1 << " of record " << i + 1 << " cannot be null." << endl;
+						return -6;
+					}*/
+					records.rows[i].items[j].isNull = true;
+					((Null*)(records.rows[i].items[j].var))->null_type = header.column[j].type;
 				}
 				VarFactory::set(records.rows[i].items[j].var, header.column[j].length);
 			}
@@ -325,7 +334,10 @@ public:
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
-		condition.init(header);
+		result = condition.init(header);
+		if (result) {
+			return result;
+		}
 		vector<int> delta;
 		result = tb->recordFind(fileID, header, condition, delta);
 		if (result) {
@@ -342,7 +354,7 @@ public:
 	}
 
 	//更新记录
-	int updateRows(string fileName, Condition &condition) {
+	int updateRows(string fileName, Update &update, Condition &condition) {
 
 		int result = findFile(fileName, true);
 		//文件不存在，或没有指定目录
@@ -352,13 +364,25 @@ public:
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
-		vector<int> delta;
-		Rows records;
-		//待更新行为空，直接返回
-		if (records.rows.size() < 1) {
-			return 0;
+		result = condition.init(header);
+		if (result) {
+			return result;
 		}
-		result = tb->updateRecord(fileID, header, delta, records);
+		result = update.init(header);
+		if (result) {
+			return result;
+		}
+		vector<int> delta;
+		result = tb->recordFind(fileID, header, condition, delta);
+		if (result) {
+			return result;
+		}
+		cout << "Delta = ";
+		for (int i = 0; i < delta.size(); ++i) {
+			cout << delta[i] << ' ';
+		}
+		cout << endl;
+		result = tb->updateRecord(fileID, header, delta, update);
 		headers[fileName] = header;
 		return result;
 	}
