@@ -5,6 +5,8 @@
 #include "tablemanager.h"
 #include "../table/columns.h"
 #include "../table/rows.h"
+#include "../condition/condition.h"
+#include "../expression/expressions.h"
 #include <map>
 
 class Document {
@@ -179,7 +181,6 @@ public:
 				int fileID;
 				fm->openFile((this->directory + file).c_str(), fileID);
 				files[tableName] = fileID;
-				//////////cout << "Read " << tableName << endl;
 				headers[tableName] = tb->readHeader(fileID, 0);
 			}
 		}
@@ -294,13 +295,27 @@ public:
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
+		for (int i = 0; i < records.rows.size(); ++i) {
+			if (header.column.size() != records.rows[i].items.size()) {
+				cout << header.column.size() << '&' << records.rows[i].items.size() << endl;
+				cout << "Numbers of columns of record " << i << " does not match." << endl;
+				return -5;
+			}
+			for (int j = 0; j < header.column.size(); ++j) {
+				if (header.column[j].type != records.rows[i].items[j].var->type()) {
+					cout << "Type of column " << j << " of record " << i << " does not match." << endl;
+					return -6;
+				}
+				VarFactory::set(records.rows[i].items[j].var, header.column[j].length);
+			}
+		}
 		result = tb->insertRecord(fileID, header, records);
 		headers[fileName] = header;
 		return result;
 	}
 
 	//删除记录
-	int deleteRows(string fileName, vector<int> &delta) {
+	int deleteRows(string fileName, Condition &condition) {
 
 		int result = findFile(fileName, true);
 		//文件不存在，或没有指定目录
@@ -310,28 +325,85 @@ public:
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
+		condition.init(header);
+		vector<int> delta;
+		result = tb->recordFind(fileID, header, condition, delta);
+		if (result) {
+			return result;
+		}
+		cout << "Delta = ";
+		for (int i = 0; i < delta.size(); ++i) {
+			cout << delta[i] << ' ';
+		}
+		cout << endl;
 		result = tb->deleteRecord(fileID, header, delta);
 		headers[fileName] = header;
 		return result;
 	}
 
 	//更新记录
-	int updateRows(string fileName, vector<int> &delta, Rows &records) {
+	int updateRows(string fileName, Condition &condition) {
 
 		int result = findFile(fileName, true);
 		//文件不存在，或没有指定目录
 		if (result) {
 			return result;
 		}
+		//获取元数据
+		Columns header = headers[fileName];
+		int fileID = files[fileName];
+		vector<int> delta;
+		Rows records;
 		//待更新行为空，直接返回
 		if (records.rows.size() < 1) {
 			return 0;
 		}
+		result = tb->updateRecord(fileID, header, delta, records);
+		headers[fileName] = header;
+		return result;
+	}
+
+	//选择记录
+	int selectRows(vector<string> &fileNames, Expressions &expressions, Condition &condition) {
+
+		if (fileNames.size() > 3) {
+			return 0;
+		}
+		string fileName = fileNames[0];
+		int result = findFile(fileName, true);
+		//文件不存在，或没有指定目录
+		if (result) {
+			return result;
+		}
 		//获取元数据
 		Columns header = headers[fileName];
 		int fileID = files[fileName];
-		result = tb->updateRecord(fileID, header, delta, records);
-		headers[fileName] = header;
+		if (fileNames.size() == 1) {
+			result = condition.init(header);
+			if (result) {
+				return result;
+			}
+			result = expressions.init(header);
+			if (result) {
+				return result;
+			}
+			vector<int> delta;
+			result = tb->recordFind(fileID, header, condition, delta);
+			cout << "Delta = ";
+			for (int i = 0; i < delta.size(); ++i) {
+				cout << delta[i] << ' ';
+			}
+			cout << endl;
+			result = tb->selectRecord(fileID, header, delta, expressions);
+			headers[fileName] = header;
+			return result;
+		}
+		if (fileName.size() == 2) {
+			return result;
+		}
+		if (fileName.size() == 3) {
+			return result;
+		}
 		return result;
 	}
 

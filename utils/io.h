@@ -94,6 +94,7 @@ public:
 		}
 	}
 	void print(BufType b) {
+		cout << endl << "================" << endl;
 		for (int i = 0; i < 2048; ++i) {
 			cout << b[i] << ' ';
 			if ((i + 1) % 60 == 0) {

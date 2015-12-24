@@ -171,7 +171,7 @@ node *show_table_node(char *relname);
 node *select_node(node *query, char *combo, node *select);
 node *query_node(char *optdistinct, node *selectclause, node *tablelist, node *conditionlist, 
                  node *order_relattr, node *group_relattr);
-node *insert_node(char *relname, node *valuelist);
+node *insert_node(char *relname, node *insertlist);
 node *delete_node(char *relname, node *conditionlist);
 node *update_node(char *relname, node *relattr, node *value, node *conditionlist);
 node *relattr_node(char *relname, char *attrname);
@@ -435,12 +435,12 @@ node *select_node(node *query, char *combo, node *select)
  * insert_node: allocates, initializes, and returns a pointer to a new
  * insert node having the indicated values.
  */
-node *insert_node(char *relname, node *valuelist)
+node *insert_node(char *relname, node *insertlist)
 {
     node *n = newnode(N_INSERT);
 
     n->u.INSERT.relname = relname;
-    n->u.INSERT.valuelist = valuelist;
+    n->u.INSERT.insertlist = insertlist;
     return n;
 }
 
@@ -546,6 +546,16 @@ node *condition_list_node(node *boolterm, char *boolop, node *condlist)
     return n;
 }
 
+node *condition_list_node(node *boolterm)
+{
+    node *n = newnode(N_CONDITIONLIST);
+
+    n->u.CONDITIONLIST.boolterm = boolterm;
+    n->u.CONDITIONLIST.boolop = NULL;
+    n->u.CONDITIONLIST.condlist = NULL;
+    return n;
+}
+
 /*
  * value_node: allocates, initializes, and returns a pointer to a new
  * value node having the indicated values.
@@ -641,6 +651,111 @@ node *prepend(node *n, node *list)
     return newlist;
 }
 
+Var* getVar(node *n) {
+    if (n == NULL) {
+        return NULL;
+    }
+    Var *var;
+    string type = string(n -> u.VALUE.type);
+    if (type == "int") {
+        var = VarFactory::get(n -> u.VALUE.ival, 0);
+    }
+    else if (type == "string") {
+        var = VarFactory::get(n -> u.VALUE.sval, 0);
+    }
+    else {
+        var = NULL;
+    }
+    return var;
+}
+ExprTerm *getTerm(node *n) {
+    if (n == NULL) {
+        return NULL;
+    }
+    ExprTerm *term = new ExprTerm();
+    if (n -> u.AGGRELATTR.relname != NULL) {
+        term->table_name = n -> u.AGGRELATTR.relname;
+    }
+    if (n -> u.AGGRELATTR.attrname != NULL) {
+        term->column_name = n -> u.AGGRELATTR.attrname;
+    }
+    if (n -> u.AGGRELATTR.func != NULL) {
+        term->term_func = term->getFunc(n -> u.AGGRELATTR.func);
+    }
+    else {
+        term->term_func = FUNC_OP_NULL;
+    }
+    return term;
+}
+Expression *getExpression(node *n) {
+    if (n == NULL) {
+        return NULL;
+    }
+    Expression *expression = new Expression();
+    node *expleft = n->u.EXPR.expleft;
+    node *expright = n->u.EXPR.expright;
+    if (n->u.EXPR.exprop != NULL) {
+        expression->expr_op = expression->getOp(n->u.EXPR.exprop);
+    }
+    if (expleft != NULL) {
+        if (expleft->kind == N_EXPR) {
+            expression->expr_left = getExpression(expleft);
+        }
+        if (expleft->kind == N_AGGRELATTR) {
+            expression->term_left = getTerm(expleft);
+        }
+    }
+    if (expright != NULL) {
+        if (expright->kind == N_EXPR) {
+            expression->expr_right = getExpression(expright);
+        }
+        if (expright->kind == N_AGGRELATTR) {
+            expression->term_right = getTerm(expright);
+        }
+    }
+    return expression;
+}
+
+Condition* getCondition(node *n) {
+    if (n == NULL) {
+        return NULL;
+    }
+    Condition *condition = new Condition();
+    node *condlist = n;
+    while (condlist) {
+        BoolTerm bool_term;
+        node *cond = condlist -> u.CONDITIONLIST.boolterm;
+        bool_term.comp_op = bool_term.getOp(cond -> u.CONDITION.op);
+        node *lhsRelattr = cond -> u.CONDITION.lhsRelattr;
+        node *rhsRelattr = cond -> u.CONDITION.rhsRelattr;
+        node *rhsValue = cond -> u.CONDITION.rhsValue;
+        if (lhsRelattr != NULL) {
+            if (lhsRelattr -> u.RELATTR.relname != NULL) {
+                bool_term.left_table_name = string(lhsRelattr -> u.RELATTR.relname);
+            }
+            if (lhsRelattr -> u.RELATTR.attrname != NULL) {
+                bool_term.left_column_name = string(lhsRelattr -> u.RELATTR.attrname);
+            }
+        }
+        if (rhsRelattr != NULL) {
+            if (rhsRelattr -> u.RELATTR.relname != NULL) {
+                bool_term.right_table_name = string(rhsRelattr -> u.RELATTR.relname);
+            }
+            if (rhsRelattr -> u.RELATTR.attrname != NULL) {
+                bool_term.right_column_name = string(rhsRelattr -> u.RELATTR.attrname);
+            }
+        }
+        if (rhsValue != NULL) {
+            bool_term.right_value = getVar(rhsValue);
+        }
+        condition->bool_terms.push_back(bool_term);
+        if ((condlist -> u.CONDITIONLIST.boolop) != NULL) {
+            condition->bool_op.push_back(condition->getOp(condlist -> u.CONDITIONLIST.boolop));
+        }
+        condlist = condlist -> u.CONDITIONLIST.condlist;
+    }
+    return condition;
+}
 
 // void new_query(void);
 int  yylex(void);
@@ -741,7 +856,6 @@ RC interp(node *n) {
 		case N_DROPDATABASE:				/* for DropDatabase() */
 			{
 				/* Make the call to drop database */
-                                                     
                                                      exe_drop_database(n -> u.DROPDATABASE.dbname);
 				break;
 			}
@@ -749,18 +863,56 @@ RC interp(node *n) {
 		case N_SELECT:				/* for Select() */
 			{
 				/* Make the call to select */
+                                                    node *query = n -> u.SELECT.query;
+                                                    Condition *condition = getCondition(query -> u.QUERY.conditionlist);
+                                                    node *tablelist = query -> u.QUERY.tablelist;
+                                                    vector<string> tableNames;
+                                                    while (tablelist) {
+                                                        node *table = tablelist -> u.LIST.curr;
+                                                        tableNames.insert(tableNames.begin(), table -> u.TABLELIST.relname);
+                                                        tablelist = tablelist -> u.LIST.next;
+                                                    }
+                                                    node *selectclause = query -> u.QUERY.selectclause;
+                                                    Expressions expressions;
+                                                    while (selectclause) {
+                                                        node *expr = selectclause -> u.LIST.curr;
+                                                        expr = expr -> u.OPTALIAS.exprplus;
+                                                        Expression *expression = getExpression(expr);
+                                                        (expressions.expressions).insert((expressions.expressions).begin(), *expression);
+                                                        selectclause = selectclause -> u.LIST.next;
+                                                    }
+                                                    exe_select(tableNames, expressions, *condition);
 				break;
 			}
 
 		case N_INSERT:				/* for Insert() */
 			{
 				/* Make the call to insert */
+                                                    Rows rows;
+                                                    node *insertlist = n -> u.INSERT.insertlist;
+                                                    while (insertlist) {
+                                                        Row row;
+                                                        node *valuelist = insertlist -> u.LIST.curr;
+                                                        while (valuelist) {
+                                                            Item item;
+                                                            node *value = valuelist -> u.LIST.curr;
+                                                            item.var = getVar(value);
+                                                            item.isNull = (item.var == NULL);
+                                                            row.items.insert(row.items.begin(), item);
+                                                            valuelist = valuelist -> u.LIST.next;
+                                                        }
+                                                        rows.rows.insert(rows.rows.begin(), row);
+                                                        insertlist = insertlist -> u.LIST.next;
+                                                    }
+                                                    exe_insert(n -> u.INSERT.relname, rows);
 				break;
 			}
 
 		case N_DELETE:				/* for Delete() */
 			{
 				/* Make the call to delete */
+                                                    Condition *condition = getCondition(n -> u.DELETE.conditionlist);
+                                                    exe_delete(n -> u.DELETE.relname, *condition);
 				break;
 			}
 

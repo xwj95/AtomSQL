@@ -33,6 +33,15 @@ int exe_desc_table(const char *db_name) {
 int exe_show_table() {
 	return dbms->showTables();
 }
+int exe_insert(const char *db_name, Rows &records) {
+	return dbms->insertRows(db_name, records);
+}
+int exe_delete(const char *db_name, Condition &condition) {
+	return dbms->deleteRows(db_name, condition);
+}
+int exe_select(vector<string> db_names, Expressions &expressions, Condition &condition) {
+	return dbms->selectRows(db_names, expressions, condition);
+}
 void exe_stop() {
 	if (dbms != NULL) {
 		delete dbms;

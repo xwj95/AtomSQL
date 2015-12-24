@@ -79,7 +79,7 @@ struct node{
       /* insert node */
       struct{
          char *relname;
-         struct node *valuelist;
+         struct node *insertlist;
       } INSERT;
 
       /* delete node */

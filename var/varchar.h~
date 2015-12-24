@@ -6,6 +6,7 @@
 class Varchar : public Var {
 
 	string value;
+	uint length;
 
 public:
 
@@ -35,10 +36,6 @@ public:
 
 	BufType read(BufType b, IO *io) {
 		return io->readString(b, value, length);
-	}
-
-	string get() {
-		return value;
 	}
 };
 

@@ -6,6 +6,8 @@
 #include "../table/rows.h"
 #include "../utils/document.h"
 #include "../utils/io.h"
+#include "../condition/condition.h"
+#include "../expression/expressions.h"
 
 class Dbms {
 
@@ -98,21 +100,23 @@ public:
 	}
 
 	//删除记录
-	int deleteRows(string tableName, vector<int> &delta) {
-		int result = document->deleteRows(tableName, delta);
+	int deleteRows(string tableName, Condition &condition) {
+		int result = document->deleteRows(tableName, condition);
 		error(result, document->getDirectory(), tableName);
 		return 0;
 	}
 
 	//更新记录
-	int updateRows(string tableName, vector<int> &delta, Rows &rows) {
-		int result = document->updateRows(tableName, delta, rows);
+	int updateRows(string tableName, Condition &condition) {
+		int result = document->updateRows(tableName, condition);
 		error(result, document->getDirectory(), tableName);
 		return 0;
 	}
 
 	//查找记录
-	int selectRows(string tableName) {
+	int selectRows(vector<string> &tableNames, Expressions &expressions, Condition &condition) {
+		int result = document->selectRows(tableNames, expressions, condition);
+		error(result, document->getDirectory(), tableNames[0]);
 		return 0;
 	}
 

@@ -7,12 +7,18 @@
 class Var {
 
 public:
+	uint length;
+
 	virtual ~Var() {
 
 	}
 
 	virtual uint size() {
 		return 0;
+	}
+
+	virtual uint len() {
+		return length;
 	}
 
 	virtual uint type() {

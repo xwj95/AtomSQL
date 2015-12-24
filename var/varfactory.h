@@ -26,6 +26,10 @@ public:
 	static Var* get(string value, uint length) {
 		return new Varchar(value, length);
 	}
+
+	static void set(Var *var, uint length) {
+		var->length = length;
+	}
 };
 
 #endif

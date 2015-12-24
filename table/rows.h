@@ -20,6 +20,7 @@ public:
 		header.writeColumns(b, io);
 		//申请新的页面
 		b = bpm->allocPage(fileID, pageID, index, true);
+		cout << "FileID = " << fileID << " PageID = " << pageID << " Index = " << index << endl;
 		bpm->markDirty(index);
 		counts = header.num;
 		b = io->writeUInt(b, counts);
@@ -60,6 +61,12 @@ public:
 			b = row.read(b, io, header);
 			rows.push_back(row);
 		}
+	}
+
+	void print(BufPageManager *bpm, IO *io, int fileID, int pageID) {
+		int index;
+		BufType b = bpm->getPage(fileID, pageID, index);
+		io->print(b);
 	}
 };
 

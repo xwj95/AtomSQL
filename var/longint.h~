@@ -6,6 +6,7 @@
 class Longint : public Var {
 
 	ll value;
+	uint length;
 
 public:
 
@@ -35,10 +36,6 @@ public:
 
 	BufType read(BufType b, IO *io) {
 		return io->readLongint(b, value);
-	}
-
-	ll get() {
-		return value;
 	}
 };
 

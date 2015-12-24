@@ -101,7 +101,7 @@ int bExit;                 // when to return from RBparse
 %type <n> expression_list expression expr_plus mulexp primary term
 %type <n> table table_ref
 %type <n> opt_group_by_clause opt_order_by_clause
-%type <n> values_list literal_value
+%type <n> insert_list values_list literal_value
 %type <n> bool_term relattr_or_value relattr
 %type <n> column_dec_list column_dec
 %type <n> opt_key_dec_list key_dec_list key_dec
@@ -316,10 +316,6 @@ select_statement
 		{
 			$$ = query_node($2, $3, $5, $6, $7, $8);
 		}
-	| SELECT opt_distinct expression_list FROM table opt_where_condition opt_group_by_clause opt_order_by_clause
-		{
-			$$ = query_node($2, $3, $5, $6, $8, $7);
-		}
 	| '(' select_statement ')' { $$ = $2; }
 	;
 
@@ -340,10 +336,12 @@ where_condition
 
 opt_group_by_clause
 	: GROUP BY relattr { $$ = $3; } 
+	| /* empty */ { $$ = NULL;}
 	;
 
 opt_order_by_clause
 	: ORDER BY relattr opt_asc_desc	{ $$ = order_attr_node($3, $4); }
+	| /* empty */ { $$ = NULL;}
 	;
 
 opt_asc_desc
@@ -355,7 +353,7 @@ opt_asc_desc
 condition
 	: bool_term
 		{
-			$$ = list_node($1);
+			$$ = condition_list_node($1);
 		}
 	| bool_term bool_op condition 
 		{ 
@@ -446,12 +444,12 @@ expression
 
 expr_plus
 	: expr_plus oprt_plus mulexp { $$ = expr_node($1, $2, $3); }
-	| mulexp { $$ = $1; }
+	| mulexp { $$ = expr_node(NULL, NULL, $1); }
 	;
 
 mulexp
 	: mulexp oprt_mul primary 	{ $$ = expr_node($1, $2, $3); }
-	| primary 		{ $$ = $1; }
+	| primary 		{ $$ = expr_node(NULL, NULL, $1); }
 	;
 
 oprt_plus
@@ -522,7 +520,7 @@ table_name
 	;
 
 table
-	: table_ref
+	: table_ref { $$ = list_node($1); }
 	| table ',' table_ref { $$ = prepend($3, $1); }
 	;
 
@@ -531,9 +529,20 @@ table_ref
 	;
 
 insert
-	: INSERT INTO table_name VALUES '(' values_list ')'
+	: INSERT INTO table_name VALUES insert_list
 		{
-			$$ = insert_node($3, $6);
+			$$ = insert_node($3, $5);
+		}
+	;
+
+insert_list
+	: '(' values_list ')'
+		{
+			$$ = list_node($2);
+		}
+	| insert_list ',' '(' values_list ')'
+		{
+			$$ = prepend($4, $1);
 		}
 	;
 
