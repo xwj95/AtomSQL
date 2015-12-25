@@ -31,7 +31,7 @@ class Dbms {
 			cout << tableName + dbtype << " already exists." << endl;
 		}
 		if ((type < -5) && (type > -30)) {
-			cout << "Error." << endl;
+			cout << "Error " << type << "." << endl;
 		}
 		if (type == -30) {
 			cout << "Update error." << endl;

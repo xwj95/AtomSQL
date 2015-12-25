@@ -47,9 +47,46 @@ public:
 		}
 		return 0;
 	}
+	int init(string file1, string file2, Columns &header1, Columns &header2) {
+		if (file1 == table_name) {
+			table_index = 1;
+			column_index = header1.column.size();
+			for (int i = 0; i < header1.column.size(); ++i) {
+				if (header1.column[i].name == column_name) {
+					column_index = i;
+					break;
+				}
+			}
+			if (column_index == header1.column.size()) {
+				return -15;
+			}
+		}
+		else {
+			table_index = 2;
+			column_index = header2.column.size();
+			for (int i = 0; i < header2.column.size(); ++i) {
+				if (header2.column[i].name == column_name) {
+					column_index = i;
+					break;
+				}
+			}
+			if (column_index == header2.column.size()) {
+				return -15;
+			}
+		}
+		return 0;
+	}
 	int cal(Row &record) {
 		var = record.items[column_index].var;
 		return 0;
+	}
+	int cal(Row &record1, Row &record2) {
+		if (table_index == 1) {
+			var = record1.items[column_index].var;
+		}
+		else {
+			var = record2.items[column_index].var;
+		}
 	}
 };
 

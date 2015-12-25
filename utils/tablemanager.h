@@ -70,10 +70,8 @@ public:
 				pageID++;
 				continue;
 			}
-			page.print(bpm, io ,fileID, pageID);
 			//寻找空槽
 			for (int i = 0; i < header.num; ++i) {
-				cout << pageID << " " << i << " " << page.rows[i].next << endl;
 				if (page.rows[i].next != 1) {
 					continue;
 				}
@@ -99,7 +97,6 @@ public:
 			}
 			page.write(bpm, io, fileID, pageID, header);
 		}
-		cout << "PageID = " << pageID << endl;
 		return 0;
 	}
 
@@ -193,31 +190,35 @@ public:
 		return 0;
 	}
 
-	//更新记录
-	int updateRecord(int fileID, Columns &header, vector<int> &delta, Condition &condition) {
-		int pageID = 1;
+	//选择记录
+	int selectRecord(int fileID1, int fileID2, Columns &header1, Columns &header2, vector<int> &delta1, vector<int> &delta2, Expressions expressions) {
 		int record = 0;
-		while ((record < delta.size()) && (pageID <= header.pages)) {
-			int pageUpd = delta[record] / header.num + 1;
-			//当前页没有要更新的记录
-			if (pageUpd != pageID) {
-				pageID++;
-				continue;
+		while (record < delta1.size()) {
+			int pageID1 = delta1[record] / header1.num + 1;
+			if (pageID1 > header1.pages) {
+				break;
+			}
+			int pageID2 = delta2[record] / header2.num + 1;
+			if (pageID2 > header2.pages) {
+				break;
 			}
 			//获取当前页的记录
-			Rows page;
-			page.read(bpm, io, fileID, pageID, header);
-			int upd = delta[record] % header.num;
-			//待更新记录为空
-			if (page.rows[upd].next == 1) {
+			Rows page1;
+			page1.read(bpm, io, fileID1, pageID1, header1);
+			Rows page2;
+			page2.read(bpm, io, fileID2, pageID2, header2);
+			int sel1 = delta1[record] % header1.num;
+			int sel2 = delta2[record] % header2.num;
+			//待选择记录为空
+			if (page1.rows[sel1].next == 1) {
 				record++;
 				continue;
 			}
-			//更新记录
-			//records.rows[record].next = page.rows[upd].next;
-			//records.rows[record].rid = page.rows[upd].rid;
-			//page.rows[upd] = records.rows[record];
-			//page.write(bpm, io, fileID, pageID, header);
+			if (page2.rows[sel2].next == 1) {
+				record++;
+				continue;
+			}
+			expressions.cal(page1.rows[sel1], page2.rows[sel2]);
 			record++;
 		}
 		return 0;
@@ -252,31 +253,47 @@ public:
 		return 0;
 	}
 
-	//查找待更新记录
-	int deleteFind(int fileID, Columns &header, Condition &condition, vector<int> &delta) {
-		int pageID = 1;
-		int record = 0;
-		delta.clear();
-		while (pageID <= header.pages) {
+	//查找待删除/更新/选择记录
+	int recordFind(int fileID1, int fileID2, Columns &header1, Columns &header2, Condition &condition, vector<int> &delta1, vector<int> &delta2) {
+		int pageID1 = 1;
+		int record1 = 0;
+		delta1.clear();
+		delta2.clear();
+		while (pageID1 <= header1.pages) {
 			//获取当前页的记录
-			Rows page;
-			page.read(bpm, io, fileID, pageID, header);
-			for (int i = 0; i < header.num; ++i) {
-				if (page.rows[i].next == 1) {
-					record++;
+			Rows page1;
+			page1.read(bpm, io, fileID1, pageID1, header1);
+			for (int i = 0; i < header1.num; ++i) {
+				if (page1.rows[i].next == 1) {
+					record1++;
 					continue;
 				}
-				bool term;
-				int result = condition.cal(page.rows[i], term);
-				if (result) {
-					return result;
+				int pageID2 = 1;
+				int record2 = 0;
+				while (pageID2 <= header2.pages) {
+					Rows page2;
+					page2.read(bpm, io, fileID2, pageID2, header2);
+					for (int j = 0; j < header2.num; ++j) {
+						if (page2.rows[j].next == 1) {
+							record2++;
+							continue;
+						}
+						bool term;
+						int result = condition.cal(page1.rows[i], page2.rows[j], term);
+						if (result) {
+							return result;
+						}
+						if (term) {
+							delta1.push_back(record1);
+							delta2.push_back(record2);
+						}
+						record2++;
+					}
+					pageID2++;
 				}
-				if (term) {
-					delta.push_back(record);
-				}
-				record++;
+				record1++;
 			}
-			pageID++;
+			pageID1++;
 		}
 		return 0;
 	}

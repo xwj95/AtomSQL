@@ -703,9 +703,11 @@ Expression *getExpression(node *n) {
     if (expleft != NULL) {
         if (expleft->kind == N_EXPR) {
             expression->expr_left = getExpression(expleft);
+            expression->value_left = NULL;
         }
         if (expleft->kind == N_AGGRELATTR) {
             expression->term_left = getTerm(expleft);
+            expression->value_left = NULL;
         }
         if (expleft->kind == N_VALUE) {
             expression->value_left = getVar(expleft);
@@ -714,9 +716,11 @@ Expression *getExpression(node *n) {
     if (expright != NULL) {
         if (expright->kind == N_EXPR) {
             expression->expr_right = getExpression(expright);
+            expression->value_right = NULL;
         }
         if (expright->kind == N_AGGRELATTR) {
             expression->term_right = getTerm(expright);
+            expression->value_right = NULL;
         }
         if (expright->kind == N_VALUE) {
             expression->value_right = getVar(expright);

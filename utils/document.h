@@ -422,10 +422,36 @@ public:
 			headers[fileName] = header;
 			return result;
 		}
-		if (fileName.size() == 2) {
+		if (fileNames.size() == 2) {
+			string fileName1 = fileNames[1];
+			int result = findFile(fileName1, true);
+			//文件不存在，或没有指定目录
+			if (result) {
+				return result;
+			}
+			//获取元数据
+			Columns header1 = headers[fileName1];
+			int fileID1 = files[fileName1];
+			result = condition.init(fileName, fileName1, header, header1);
+			if (result) {
+				return result;
+			}
+			result = expressions.init(fileName, fileName1, header, header1);
+			if (result) {
+				return result;
+			}
+			vector<int> delta;
+			vector<int> delta1;
+			result = tb->recordFind(fileID, fileID1, header, header1, condition, delta, delta1);
+			cout << "Delta = ";
+			for (int i = 0; i < delta.size(); ++i) {
+				cout << delta[i] << ", " << delta1[i] << ' ';
+			}
+			cout << endl;
+			result = tb->selectRecord(fileID, fileID1, header, header1, delta, delta1, expressions);
 			return result;
 		}
-		if (fileName.size() == 3) {
+		if (fileNames.size() == 3) {
 			return result;
 		}
 		return result;

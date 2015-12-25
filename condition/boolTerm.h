@@ -112,6 +112,83 @@ public:
 		}
 		return -11;
 	}
+	int cal(Row &record1, Row &record2, bool &term) {
+		Var *var1;
+		if (left_table == 1) {
+			var1 = record1.items[left_column].var;
+		}
+		else {
+			var1 = record2.items[left_column].var;
+		}
+		Var *var2 = right_value;
+		if (right_value == NULL) {
+			if (right_table == 1) {
+				var2 = record1.items[right_column].var;
+			}
+			else {
+				var2 = record2.items[right_column].var;
+			}
+		}
+		if ((var1 == NULL)  || (var2 == NULL)) {
+			term = false;
+			return 0;
+		}
+		if (comp_op == COMP_OP_IS) {
+			term = (var1->type() == TYPE_NULL);
+			return 0;
+		}
+		if ((var1->type()) != (var2->type())) {
+			if ((var1->type()) == TYPE_NULL) {
+				term = false;
+				return 0;
+			}
+			return -9;
+		}
+		if (var1->type() == TYPE_VARCHAR) {
+			string s1 = ((Varchar*) var1)->get();
+			string s2 = ((Varchar*) var2)->get();
+			if (comp_op == COMP_OP_EQU) {
+				term = (s1 == s2);
+				return 0;
+			}
+			if (comp_op == COMP_OP_NEQ) {
+				term = (s1 != s2);
+				return 0;
+			}
+			if (comp_op == COMP_OP_LIKE) {
+				term = false;
+				return 0;
+			}
+			return -10;
+		}
+		ll l1 = ((Longint*) var1)->get();
+		ll l2 = ((Longint*) var2)->get();
+		if (comp_op == COMP_OP_EQU) {
+			term = (l1 == l2);
+			return 0;
+		}
+		if (comp_op == COMP_OP_NEQ) {
+			term = (l1 != l2);
+			return 0;
+		}
+		if (comp_op == COMP_OP_LSS) {
+			term = (l1 < l2);
+			return 0;
+		}
+		if (comp_op == COMP_OP_GTR) {
+			term = (l1 > l2);
+			return 0;
+		}
+		if (comp_op == COMP_OP_LEQ) {
+			term = (l1 <= l2);
+			return 0;
+		}
+		if (comp_op == COMP_OP_GEQ) {
+			term = (l1 >= l2);
+			return 0;
+		}
+		return -11;
+	}
 	int init(Columns &header) {
 		left_table = 1;
 		left_column = header.column.size();
@@ -137,6 +214,67 @@ public:
 		}
 		if (right_column == header.column.size()) {
 			return -8;
+		}
+		return 0;
+	}
+	int init(string file1, string file2, Columns &header1, Columns &header2) {
+		if (file1 == left_table_name) {
+			left_table = 1;
+			left_column = header1.column.size();
+			for (int i = 0; i < header1.column.size(); ++i) {
+				if (header1.column[i].name == left_column_name) {
+					left_column = i;
+					break;
+				}
+			}
+			if (left_column == header1.column.size()) {
+				return -7;
+			}
+		}
+		else {
+			left_table = 2;
+			left_column = header2.column.size();
+			for (int i = 0; i < header2.column.size(); ++i) {
+				if (header2.column[i].name == left_column_name) {
+					left_column = i;
+					break;
+				}
+			}
+			if (left_column == header2.column.size()) {
+				return -7;
+			}
+		}
+		if (right_table_name != "") {
+			right_value = NULL;
+		}
+		if (right_value != NULL) {
+			return 0;
+		}
+		if (file1 == right_table_name) {
+			right_table = 1;
+			right_column = header1.column.size();
+			for (int i = 0; i < header1.column.size(); ++i) {
+				if (header1.column[i].name == right_column_name) {
+					right_column = i;
+					break;
+				}
+			}
+			if (right_column == header1.column.size()) {
+				return -7;
+			}
+		}
+		else {
+			right_table = 2;
+			right_column = header2.column.size();
+			for (int i = 0; i < header2.column.size(); ++i) {
+				if (header2.column[i].name == right_column_name) {
+					right_column = i;
+					break;
+				}
+			}
+			if (right_column == header2.column.size()) {
+				return -7;
+			}
 		}
 		return 0;
 	}
