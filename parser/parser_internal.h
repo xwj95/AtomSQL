@@ -108,7 +108,7 @@ typedef int RC;
 /*
  * total number of nodes available for a given parse-tree
  */
-#define MAXNODE		100
+#define MAXNODE		100000
 static NODE nodepool[MAXNODE];
 static int nodeptr = 0;
 /*
@@ -118,7 +118,7 @@ static int nodeptr = 0;
 */
 
 //scanhelp.c
-#define MAXCHAR		5000
+#define MAXCHAR		500000
 
 /*
  * buffer for string allocation
