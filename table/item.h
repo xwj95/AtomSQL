@@ -8,6 +8,11 @@ class Item {
 public:
 	Var *var;
 	bool isNull;
+
+	Item() {
+		var = NULL;
+	}
+
 };
 
 #endif

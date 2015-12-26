@@ -55,10 +55,17 @@ public:
 		BufType b = bpm->getPage(fileID, pageID, index);
 		bpm->access(index);
 		b = io->readUInt(b, counts);
+		rows.clear();
 		for (int i = 0; i < header.num; ++i) {
-			Row row;
-			b = row.read(b, io, header);
-			rows.push_back(row);
+		 	Row row;
+		 	b = row.read(b, io, header);
+		 	rows.push_back(row);
+		}
+	}
+
+	void release() {
+		for (int i = 0; i < rows.size(); ++i) {
+			rows[i].release();
 		}
 	}
 
@@ -66,6 +73,15 @@ public:
 		int index;
 		BufType b = bpm->getPage(fileID, pageID, index);
 		io->print(b);
+	}
+
+	void clear() {
+		vector<Row> temp;
+		temp.swap(rows);
+	}
+
+	~Rows() {
+		clear();
 	}
 };
 

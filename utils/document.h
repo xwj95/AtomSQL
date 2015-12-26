@@ -308,10 +308,10 @@ public:
 						cout << "Type of column " << j + 1 << " of record " << i + 1 << " does not match." << endl;
 						return -6;
 					}
-					/*if (!header.column[j].canNull) {
+					if (!header.column[j].canNull) {
 						cout << "Column " << j + 1 << " of record " << i + 1 << " cannot be null." << endl;
 						return -6;
-					}*/
+					}
 					records.rows[i].items[j].isNull = true;
 					((Null*)(records.rows[i].items[j].var))->null_type = header.column[j].type;
 				}
@@ -343,11 +343,6 @@ public:
 		if (result) {
 			return result;
 		}
-		cout << "Delta = ";
-		for (int i = 0; i < delta.size(); ++i) {
-			cout << delta[i] << ' ';
-		}
-		cout << endl;
 		result = tb->deleteRecord(fileID, header, delta);
 		headers[fileName] = header;
 		return result;
@@ -377,11 +372,6 @@ public:
 		if (result) {
 			return result;
 		}
-		cout << "Delta = ";
-		for (int i = 0; i < delta.size(); ++i) {
-			cout << delta[i] << ' ';
-		}
-		cout << endl;
 		result = tb->updateRecord(fileID, header, delta, update);
 		headers[fileName] = header;
 		return result;
@@ -413,12 +403,13 @@ public:
 			}
 			vector<int> delta;
 			result = tb->recordFind(fileID, header, condition, delta);
-			cout << "Delta = ";
-			for (int i = 0; i < delta.size(); ++i) {
-				cout << delta[i] << ' ';
+			cout << endl << "Select result: " << endl << endl;
+			if (condition.bool_terms.size()) {
+				result = tb->selectRecord(fileID, header, delta, expressions);
 			}
-			cout << endl;
-			result = tb->selectRecord(fileID, header, delta, expressions);
+			else {
+				result = tb->aggRecord(fileID, header, expressions);
+			}
 			headers[fileName] = header;
 			return result;
 		}
@@ -443,15 +434,41 @@ public:
 			vector<int> delta;
 			vector<int> delta1;
 			result = tb->recordFind(fileID, fileID1, header, header1, condition, delta, delta1);
-			cout << "Delta = ";
-			for (int i = 0; i < delta.size(); ++i) {
-				cout << delta[i] << ", " << delta1[i] << ' ';
-			}
-			cout << endl;
+			cout << endl << "Select result: " << endl << endl;
 			result = tb->selectRecord(fileID, fileID1, header, header1, delta, delta1, expressions);
 			return result;
 		}
 		if (fileNames.size() == 3) {
+			string fileName1 = fileNames[1];
+			int result = findFile(fileName1, true);
+			//文件不存在，或没有指定目录
+			if (result) {
+				return result;
+			}
+			//获取元数据
+			Columns header1 = headers[fileName1];
+			int fileID1 = files[fileName1];
+			string fileName2 = fileNames[2];
+			result = findFile(fileName2, true);
+			if (result) {
+				return result;
+			}
+			Columns header2 = headers[fileName2];
+			int fileID2 = files[fileName2];
+			result = condition.init(fileName, fileName1, fileName2, header, header1, header2);
+			if (result) {
+				return result;
+			}
+			result = expressions.init(fileName, fileName1, fileName2, header, header1, header2);
+			if (result) {
+				return result;
+			}
+			vector<int> delta;
+			vector<int> delta1;
+			vector<int> delta2;
+			result = tb->recordFind(fileID, fileID1, fileID2, header, header1, header2, condition, delta, delta1, delta2);
+			cout << endl << "Select result: " << endl << endl;
+			result = tb->selectRecord(fileID, fileID1, fileID2, header, header1, header2, delta, delta1, delta2, expressions);
 			return result;
 		}
 		return result;

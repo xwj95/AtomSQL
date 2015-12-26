@@ -13,11 +13,6 @@ public:
 	ull rid;
 	uint next;
 
-	void clear() {
-		items.clear();
-		rid = 0;
-	}
-
 	//写记录
 	BufType write(BufType b, IO *io, Columns &header) {
 
@@ -64,7 +59,7 @@ public:
 		if (next == 1) {
 			return b + (header.size - TABLE_ITEM_NEXT_BYTE - TABLE_ITEM_RID_BYTE) / sizeof(uint);
 		}
-
+		items.clear();
 		//读入每一列项是否为空
 		for (int i = 0; i < (header.column.size() + 31) / 32; ++i) {
 			uint nulls = 0;
@@ -73,7 +68,7 @@ public:
 				if (j >= header.column.size()) {
 					break;
 				}
-				Item item = Item();
+				Item item;
 				item.isNull = nulls % (1 << TABLE_ITEM_NULL_BIT);
 				nulls = nulls >> TABLE_ITEM_NULL_BIT;
 				items.push_back(item);
@@ -90,6 +85,15 @@ public:
 			}
 		}
 		return b;
+	}
+
+	void release() {
+		for (int i = 0; i < items.size(); ++i) {
+			if (items[i].var != NULL) {
+				delete items[i].var;
+				items[i].var = NULL;
+			}
+		}
 	}
 
 	//移除记录
@@ -133,6 +137,16 @@ public:
 			b = items[i].var->write(b, io);
 		}
 		return b;
+	}
+
+	void clear() {
+		vector<Item> temp;
+		temp.swap(items);
+		rid = 0;
+	}
+
+	~Row() {
+		clear();
 	}
 };
 

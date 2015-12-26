@@ -11,31 +11,21 @@ public:
 
 	virtual ~Var() {
 
-	}
+	};
 
-	virtual uint size() {
-		return 0;
-	}
+	virtual uint size() = 0;
+
+	virtual uint type() = 0;
+
+	virtual void print() = 0;
 
 	virtual uint len() {
 		return length;
 	}
 
-	virtual uint type() {
-		return TYPE_NONE;
-	}
+	virtual BufType write(BufType b, IO *io) = 0;
 
-	virtual void print() {
-
-	}
-
-	virtual BufType write(BufType b, IO *io) {
-		return b;
-	}
-
-	virtual BufType read(BufType b, IO *io) {
-		return b;
-	}
+	virtual BufType read(BufType b, IO *io) = 0;
 };
 
 #endif
