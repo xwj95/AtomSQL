@@ -887,12 +887,18 @@ RC interp(node *n) {
                                                     }
                                                     node *selectclause = query -> u.QUERY.selectclause;
                                                     Expressions expressions;
+                                                    if (query->u.QUERY.grouprelattr != NULL) {
+                                                        expressions.group_by = string(query->u.QUERY.grouprelattr->u.RELATTR.attrname);
+                                                    }
                                                     while (selectclause) {
                                                         node *expr = selectclause -> u.LIST.curr;
                                                         expr = expr -> u.OPTALIAS.exprplus;
                                                         Expression *expression = getExpression(expr);
                                                         (expressions.expressions).insert((expressions.expressions).begin(), *expression);
                                                         selectclause = selectclause -> u.LIST.next;
+                                                    }
+                                                    if (condition == NULL) {
+                                                        condition = new Condition();
                                                     }
                                                     exe_select(tableNames, expressions, *condition);
 				break;
